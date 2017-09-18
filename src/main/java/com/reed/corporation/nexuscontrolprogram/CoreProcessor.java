@@ -170,6 +170,8 @@ class CmdProcessor{
         
     }
     
+    //Because netbeans is a bitch sometimes
+    
     private void guestPass(Message m){
         Server tws = m.getChannelReceiver().getServer();
         if(m.getAuthor().getRoles(tws).isEmpty()&&tws.getRoleById(specifics.get(tws.getId()).getGuessPassId())!=null){
