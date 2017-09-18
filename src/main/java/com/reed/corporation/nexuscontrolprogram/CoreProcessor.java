@@ -9,6 +9,10 @@ import de.btobastian.javacord.entities.Channel;
 import de.btobastian.javacord.entities.Server;
 import de.btobastian.javacord.entities.User;
 import de.btobastian.javacord.entities.message.Message;
+import de.btobastian.javacord.entities.message.MessageAttachment;
+import de.btobastian.javacord.entities.message.Reaction;
+import de.btobastian.javacord.entities.message.embed.Embed;
+import de.btobastian.javacord.entities.permissions.Permissions;
 import de.btobastian.javacord.entities.permissions.Role;
 import de.btobastian.javacord.listener.message.MessageCreateListener;
 import java.io.File;
@@ -54,6 +58,8 @@ public class CoreProcessor {
                                 mess.reply("\\o\\");
                             else if(bieberDetector(mess)){
                                 mess.reply("!ban "+mess.getAuthor().getMentionTag());
+                            }else if(mess.getContent().contains("F")&&mess.getContent().length()==1){
+                                reactionAddF(mess);
                             }
                         }catch(NullPointerException e){
                             e.printStackTrace();
@@ -71,6 +77,9 @@ public class CoreProcessor {
                 //god.getServerById("267380702708891648").getChannelById("339622824631205899").sendMessage("I have crashed, here is the report:\n"+t);
             }
         });
+    }
+    
+    private void reactionAddF(Message m){
     }
     
     private boolean bieberDetector(Message m){
@@ -107,8 +116,10 @@ class CmdProcessor{
     }
     
     CmdProcessor(DiscordAPI api,Message msg){
-        if(god==null)
+        if(god==null){
             expLoadData(api);
+            god = api;
+        }
         if(!aprldd){
             god = api;
             expLoadData(api);
@@ -143,16 +154,70 @@ class CmdProcessor{
             case "cmd"          :custCommands(msg);break;
             case "diag"         :
             case "diagnostics"  :diagnostics(msg);break;
+            case "guestPass"    :guestPass(msg);break;
             case "kos"          :kosProcessor(msg);break;
+            case "lmds"         :
+            case "listMsgDtls"  :listMessageDetails(api, msg);break;
             case "lrids"        :
-            case "listRoleIDs"  :msg.getAuthor().sendMessage("```"+new ArrayList<Role>(god.getServerById(this.getCurrentServerID(api, msg)).getRoles()).toString()+"```");break;
+            case "listRoleIDs"  :listRoleDetails(msg);break;
             case "quote"        :quoteProcessor(msg);break;
             case "reload"       :expLoadData(api);msg.reply("Reloading saved data...");break;
             case "save"         :expSaveData(api);msg.reply("Saving data to file...");break;
+            case "sudo"         :sudoActions(api, msg);break;
             case "help"         :helpAction(msg);break;
             default             :custCmdProc(msg);
         }
         
+    }
+    
+    private void guestPass(Message m){
+        Server tws = m.getChannelReceiver().getServer();
+        if(m.getAuthor().getRoles(tws).isEmpty()&&tws.getRoleById(specifics.get(tws.getId()).getGuessPassId())!=null){
+            Role guest = tws.getRoleById(specifics.get(tws.getId()).getGuessPassId());
+            guest.addUser(m.getAuthor());
+            m.getAuthor().sendMessage("You now have a guest pass for "+tws.getName());
+            m.delete();
+        }else{
+            m.reply("I'm sorry, but this server does not have a guest pass, my condolences...");
+        }
+    }
+    
+    private void sudoActions(DiscordAPI a, Message m){
+        Server serv = m.getChannelReceiver().getServer();
+        String sID = serv.getId();
+        //&sudo set guestID %GUEST-ID%
+        String mC = m.getContent().replaceAll("&sudo","").trim();
+        //set guestID %GUEST-ID%
+        String[] cmP = mC.split(" ");
+        //["set", "guestID", "%GUEST-ID%"]
+        if(cmP[0].equalsIgnoreCase("set")){
+            switch(cmP[1]){
+                case "guestID":specifics.get(sID).setGuestRoleId(cmP[2]);break;
+            }
+        }
+    }
+    
+    private void listMessageDetails(DiscordAPI apo, Message m){
+        String sent = "";
+        sent += m.toString()+"\n";
+        ArrayList<Embed> embs = new ArrayList<>(m.getEmbeds());
+        for(Embed e:embs)
+            sent+=e.toString()+"\n";
+        ArrayList<MessageAttachment> mats = new ArrayList<>(m.getAttachments());
+        for(MessageAttachment mit:mats)
+            sent+=mit.toString()+"\n";
+        m.getAuthor().sendMessage("```"+sent+"```");
+    }
+    
+    private void listRoleDetails(Message m){
+        String sent = "";
+        ArrayList<Role> roles = new ArrayList<>(god.getServerById(this.getCurrentServerID(god, m)).getRoles());
+        for(Role r:roles){
+            sent+=r.toString()+"\n";
+            Permissions p = r.getPermissions();
+            sent+="\t"+p.toString()+"\n";
+        }
+        m.getAuthor().sendMessage("```"+sent+"```");
     }
     
     private void helpAction(Message m){
