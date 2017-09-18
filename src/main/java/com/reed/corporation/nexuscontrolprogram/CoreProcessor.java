@@ -172,6 +172,8 @@ class CmdProcessor{
         
     }
     
+    
+    
     private void unmuteAction(Message m){
         if(authorize(m.getAuthor())){
             Server s = m.getChannelReceiver().getServer();
