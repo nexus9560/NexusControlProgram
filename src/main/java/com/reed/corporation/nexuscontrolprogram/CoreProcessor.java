@@ -10,7 +10,6 @@ import de.btobastian.javacord.entities.Server;
 import de.btobastian.javacord.entities.User;
 import de.btobastian.javacord.entities.message.Message;
 import de.btobastian.javacord.entities.message.MessageAttachment;
-import de.btobastian.javacord.entities.message.Reaction;
 import de.btobastian.javacord.entities.message.embed.Embed;
 import de.btobastian.javacord.entities.permissions.Permissions;
 import de.btobastian.javacord.entities.permissions.Role;
@@ -181,6 +180,8 @@ class CmdProcessor{
             String i = s.getId();
             Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
             mute.removeUser(s.getMemberById(c[1]));
+        }else{
+            m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
     }
     
@@ -192,6 +193,8 @@ class CmdProcessor{
             String i = s.getId();
             Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
             mute.addUser(s.getMemberById(c[1]));
+        }else{
+            m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
     }
     
