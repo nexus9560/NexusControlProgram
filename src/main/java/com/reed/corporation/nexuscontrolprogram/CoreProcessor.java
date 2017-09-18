@@ -11,7 +11,7 @@ import de.btobastian.javacord.entities.User;
 import de.btobastian.javacord.entities.message.Message;
 import de.btobastian.javacord.entities.message.MessageAttachment;
 import de.btobastian.javacord.entities.message.embed.Embed;
-import de.btobastian.javacord.entities.permissions.Permissions;
+import de.btobastian.javacord.entities.message.embed.EmbedBuilder;
 import de.btobastian.javacord.entities.permissions.Role;
 import de.btobastian.javacord.listener.message.MessageCreateListener;
 import java.io.File;
@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Scanner;
 
@@ -44,7 +45,9 @@ public class CoreProcessor {
                 apo.registerListener(new MessageCreateListener(){
                     public void onMessageCreate(DiscordAPI apc, Message mess){
                         try{
-                        if(!mess.getAuthor().getId().equals("339467323251359744"))
+                        if(mess.getAuthor().getName().equalsIgnoreCase("McJamz")&&mess.getContent().contains("MAKE ME")){
+                            mess.reply(mess.getAuthor().getMentionTag()+" no.");
+                        }else if(!mess.getAuthor().isBot())
                             if(mess.getContent().substring(0,2).contains("&")){
                                 if(working==null)
                                     working = new CmdProcessor(apc,mess);
@@ -57,9 +60,9 @@ public class CoreProcessor {
                                 mess.reply("\\o\\");
                             else if(bieberDetector(mess)){
                                 mess.reply("!ban "+mess.getAuthor().getMentionTag());
-                            }else if(mess.getContent().contains("F")&&mess.getContent().length()==1){
+                            }/*else if(mess.getContent().contains("F")&&mess.getContent().length()==1){
                                 reactionAddF(mess);
-                            }
+                            }*/
                         }catch(NullPointerException e){
                             e.printStackTrace();
                             String sentMessage = "I have crashed, here is the report: "+e.getMessage();
@@ -177,9 +180,12 @@ class CmdProcessor{
         if(authorize(m.getAuthor())){
             Server s = m.getChannelReceiver().getServer();
             String[] c = m.getContent().split(" ");
+            for(int x=1;x<c.length;x++)
+                c[x] = c[x].replaceAll("[<@!>]","");
             String i = s.getId();
             Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
-            mute.removeUser(s.getMemberById(c[1]));
+            for(int x=1;x<c.length;x++)
+                mute.removeUser(s.getMemberById(c[x]));
         }else{
             m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
@@ -190,9 +196,14 @@ class CmdProcessor{
         if(authorize(m.getAuthor())){
             Server s = m.getChannelReceiver().getServer();
             String[] c = m.getContent().split(" ");
+            for(int x=1;x<c.length;x++)
+                c[x] = c[x].replaceAll("[<@!>]","");
             String i = s.getId();
             Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
-            mute.addUser(s.getMemberById(c[1]));
+            for(int x=1;x<c.length;x++)
+                mute.addUser(s.getMemberById(c[x]));
+            for(int x=1;x<c.length;x++)
+                s.getChannelById(specifics.get(i).getMuteChannelId()).sendMessage("Welcome to Purge-atory "+s.getMemberById(c[x]).getMentionTag()+", please enjoy your stay.");
         }else{
             m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
@@ -221,6 +232,7 @@ class CmdProcessor{
             //set guestID %GUEST-ID%
             String[] cmP = mC.split(" ");
             //["set", "guestID", "%GUEST-ID%"]
+            //System.out.println(Arrays.toString(cmP));
             if(cmP[0].equalsIgnoreCase("set")){
                 switch(cmP[1]){
                     case "guestID"  :specifics.get(sID).setGuestRoleId(cmP[2]);break;
@@ -250,10 +262,19 @@ class CmdProcessor{
         ArrayList<Role> roles = new ArrayList<>(god.getServerById(this.getCurrentServerID(god, m)).getRoles());
         for(Role r:roles){
             sent+=r.toString()+"\n";
-            Permissions p = r.getPermissions();
-            sent+="\t"+p.toString()+"\n";
         }
-        m.getAuthor().sendMessage("```"+sent+"```");
+        if(sent.length()<2000)
+            m.reply("```"+sent+"```");
+        else{
+            String[] ti = sent.split("\n");
+            ArrayList<String> reto = new ArrayList<>();
+            int lo = 0;
+            int to = 1;
+            reto.add(ti[0]);
+            while(reto.get(lo).length()<1950){
+                
+            }
+        }
     }
     
     private void helpAction(Message m){
@@ -286,8 +307,15 @@ class CmdProcessor{
         send = specifics.get(thisServer.getId()).chkCmd(m.getContent().replaceAll("&", ""));
         if(send==null)
             snarkyResponse(m);
-        else
-            m.reply(send);
+        else{
+            if(send.contains("http://")||send.contains("https://")){
+                EmbedBuilder b = new EmbedBuilder();
+                b.setUrl(send.substring(send.indexOf("http")));
+                System.out.println(b);
+                m.reply(send,b);
+            }else
+                m.reply(send);
+        }
     }
     
     private int greaterThanZero(String s){
