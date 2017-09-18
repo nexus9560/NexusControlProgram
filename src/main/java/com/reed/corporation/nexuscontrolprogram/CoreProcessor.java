@@ -160,14 +160,37 @@ class CmdProcessor{
             case "listMsgDtls"  :listMessageDetails(api, msg);break;
             case "lrids"        :
             case "listRoleIDs"  :listRoleDetails(msg);break;
+            case "mute"         :muteAction(msg);break;
             case "quote"        :quoteProcessor(msg);break;
             case "reload"       :expLoadData(api);msg.reply("Reloading saved data...");break;
             case "save"         :expSaveData(api);msg.reply("Saving data to file...");break;
             case "sudo"         :sudoActions(api, msg);break;
+            case "unmute"       :unmuteAction(msg);break;
             case "help"         :helpAction(msg);break;
             default             :custCmdProc(msg);
         }
         
+    }
+    
+    private void unmuteAction(Message m){
+        if(authorize(m.getAuthor())){
+            Server s = m.getChannelReceiver().getServer();
+            String[] c = m.getContent().split(" ");
+            String i = s.getId();
+            Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
+            mute.removeUser(s.getMemberById(c[1]));
+        }
+    }
+    
+    private void muteAction(Message m){
+        //&mute %USER-ID
+        if(authorize(m.getAuthor())){
+            Server s = m.getChannelReceiver().getServer();
+            String[] c = m.getContent().split(" ");
+            String i = s.getId();
+            Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
+            mute.addUser(s.getMemberById(c[1]));
+        }
     }
     
     //Because netbeans is a bitch sometimes
@@ -185,17 +208,23 @@ class CmdProcessor{
     }
     
     private void sudoActions(DiscordAPI a, Message m){
-        Server serv = m.getChannelReceiver().getServer();
-        String sID = serv.getId();
-        //&sudo set guestID %GUEST-ID%
-        String mC = m.getContent().replaceAll("&sudo","").trim();
-        //set guestID %GUEST-ID%
-        String[] cmP = mC.split(" ");
-        //["set", "guestID", "%GUEST-ID%"]
-        if(cmP[0].equalsIgnoreCase("set")){
-            switch(cmP[1]){
-                case "guestID":specifics.get(sID).setGuestRoleId(cmP[2]);break;
+        if(authorize(m.getAuthor())){
+            Server serv = m.getChannelReceiver().getServer();
+            String sID = serv.getId();
+            //&sudo set guestID %GUEST-ID%
+            String mC = m.getContent().replaceAll("&sudo","").trim();
+            //set guestID %GUEST-ID%
+            String[] cmP = mC.split(" ");
+            //["set", "guestID", "%GUEST-ID%"]
+            if(cmP[0].equalsIgnoreCase("set")){
+                switch(cmP[1]){
+                    case "guestID"  :specifics.get(sID).setGuestRoleId(cmP[2]);break;
+                    case "muteID"   :specifics.get(sID).setMuteRoleId(cmP[2]);break;
+                    case "muteChannel":specifics.get(sID).setMuteChannel(cmP[2]);break;
+                }
             }
+        }else{
+            m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
     }
     
