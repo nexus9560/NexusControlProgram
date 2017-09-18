@@ -16,9 +16,27 @@ public class ServerSpecifics {
     private HashMap<String,String> kos = new HashMap<>();
     
     private ArrayList<String> quotes = new ArrayList<>();
+    
+    private String guestRoleId = null;
+    
+    private String muteRoleId = null;
+    
+    private String muteChannel = null;
 
     ServerSpecifics(){
         //authUsers.add("103730295533993984");
+    }
+    
+    public void setMuteChannel(String s){
+        muteChannel = s;
+    }
+    
+    public void setMuteRoleId(String s){
+        muteRoleId = s;
+    }
+    
+    public void setGuestRoleId(String s){
+        guestRoleId = s;
     }
     
     public void setLimitedStatus(boolean b){
@@ -47,6 +65,8 @@ public class ServerSpecifics {
     
     public void setSettings(String[] c){
         limited = c[0].contains("1");
+        if(c.length>1)
+            guestRoleId = c[1].split(":")[1];
     }
     
     public boolean addAuthUser(String u){
@@ -101,6 +121,12 @@ public class ServerSpecifics {
         return authUsers.contains(u);
     }
     
+    public String getMuteChannelId(){return muteChannel;}
+    
+    public String getMuteRoleId(){return muteRoleId;}
+    
+    public String getGuessPassId(){return guestRoleId;}
+    
     public boolean getLimitedStatus(){return limited;}
     
     public String getKOS(String s){
@@ -135,6 +161,7 @@ public class ServerSpecifics {
     public String getSettings(){
         String ret="";
         ret+="limited:"+(limited?1:0)+"\n";
+        ret+="GPID   :"+guestRoleId+"\n";
         return ret;
     }
     
@@ -160,6 +187,9 @@ public class ServerSpecifics {
             ret[3]+=s+"\n";
         
         ret[4]+="limited:"+(limited?1:0)+"\n";
+        ret[4]+="guestID:"+guestRoleId+"\n";
+        ret[4]+="muteRID:"+muteRoleId+"\n";
+        ret[4]+="muteCID:"+muteChannel+"\n";
         
         
         return ret;
@@ -168,11 +198,14 @@ public class ServerSpecifics {
     public String toString(){
         String ret = "\n";
         
-        ret +="\tAuthorized Users : "+authUsers.toString()+"\n";
-        ret +="\tCustom Commands  : "+custCmds.keySet().size()+"\n";
-        ret +="\tKill On Sight tgt: "+kos.keySet().size()+"\n";
-        ret +="\tQuotes           : "+quotes.size()+"\n";
-        ret +="\tLimited Status   : "+limited+"\n";
+        ret +="\tAuthorized Users   : "+authUsers.toString()+"\n";
+        ret +="\tCustom Commands    : "+custCmds.keySet().size()+"\n";
+        ret +="\tKill On Sight tgt  : "+kos.keySet().size()+"\n";
+        ret +="\tQuotes             : "+quotes.size()+"\n";
+        ret +="\tLimited Status     : "+limited+"\n";
+        ret +="\tGuest Pass Role    : "+guestRoleId+"\n";
+        ret +="\tMute Role ID       : "+muteRoleId+"\n";
+        ret +="\tMute Channel ID    : "+muteChannel+"\n";
         
         return ret;
     }
