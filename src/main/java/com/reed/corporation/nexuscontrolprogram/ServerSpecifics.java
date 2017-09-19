@@ -9,13 +9,13 @@ public class ServerSpecifics {
     
     private boolean limited=true;
     
-    private HashSet<String> authUsers = new HashSet<>();
+    private final HashSet<String> authUsers = new HashSet<>();
     
-    private HashMap<String,String> custCmds = new HashMap<>();
+    private final HashMap<String,String> custCmds = new HashMap<>();
     
-    private HashMap<String,String> kos = new HashMap<>();
+    private final HashMap<String,String> kos = new HashMap<>();
     
-    private ArrayList<String> quotes = new ArrayList<>();
+    private final ArrayList<String> quotes = new ArrayList<>();
     
     private String guestRoleId = null;
     
@@ -67,6 +67,10 @@ public class ServerSpecifics {
         limited = c[0].contains("1");
         if(c.length>1)
             guestRoleId = c[1].split(":")[1];
+        if(c.length>2)
+            muteRoleId = c[2].split(":")[1];
+        if(c.length>3)
+            muteChannel = c[3].split(":")[1];
     }
     
     public boolean addAuthUser(String u){
