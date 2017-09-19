@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Scanner;
 
@@ -29,8 +28,6 @@ import java.util.Scanner;
  * @author Disingenuous Donuts
  */
 public class CoreProcessor {
-    
-    private static boolean first=false;
     
     private static CmdProcessor working = null;
     
