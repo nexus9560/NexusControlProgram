@@ -17,7 +17,6 @@ import de.btobastian.javacord.listener.message.MessageCreateListener;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
@@ -134,7 +133,7 @@ class CmdProcessor{
     
     public final void process(DiscordAPI api, Message msg){
         
-        System.out.println(god.toString());
+        ////System.out.*(god.toString());
         
         if(msg.getContent().contains("&kys"))
             terminate(api,msg,true);
@@ -165,13 +164,18 @@ class CmdProcessor{
             case "save"         :expSaveData(api);msg.reply("Saving data to file...");break;
             case "sudo"         :sudoActions(api, msg);break;
             case "unmute"       :unmuteAction(msg);break;
+            //case "whois"        :InaraScraper.whois(msg.getContent().replaceAll("&whois ",""));break;
             case "help"         :helpAction(msg);break;
+            case "welcome"      :welcomeAction(msg);break;
             default             :custCmdProc(msg);
         }
         
     }
     
-    
+    public void welcomeAction(Message m){
+        String sID = m.getChannelReceiver().getServer().getId();
+        m.reply(specifics.get(sID).getWelcomeMessage());
+    }
     
     private void unmuteAction(Message m){
         if(authorize(m.getAuthor())){
@@ -229,12 +233,27 @@ class CmdProcessor{
             //set guestID %GUEST-ID%
             String[] cmP = mC.split(" ");
             //["set", "guestID", "%GUEST-ID%"]
-            //System.out.println(Arrays.toString(cmP));
+            ////System.out.*(Arrays.toString(cmP));
             if(cmP[0].equalsIgnoreCase("set")){
                 switch(cmP[1]){
                     case "guestID"  :specifics.get(sID).setGuestRoleId(cmP[2]);break;
                     case "muteID"   :specifics.get(sID).setMuteRoleId(cmP[2]);break;
                     case "muteChannel":specifics.get(sID).setMuteChannel(cmP[2]);break;
+                    case "welcome": specifics.get(sID).setWelcoming(Boolean.parseBoolean(cmP[2]));break;
+                    case "welcomeMessage":specifics.get(sID).setWelcomeMessage(cmP);break;
+                    case "welcomeChannel":specifics.get(sID).setWelcChanID(cmP[2]);break;
+                    case "botLog":specifics.get(sID).setBotLog(cmP[2]);break;
+                }
+            }else if(cmP[0].equalsIgnoreCase("get")){
+                switch(cmP[1]){
+                    case "guestID"          :m.reply("Guest role ID for this server is  : "+specifics.get(sID).getGuessPassId());break;
+                    case "muteID"           :m.reply("Mute role ID for this server is   : "+specifics.get(sID).getMuteRoleId());break;
+                    case "muteChannel"      :m.reply("Mute Channel ID for this server is: "+specifics.get(sID).getMuteChannelId());break;
+                    case "controllerSize"   :m.reply("The data manager has : "+specifics.keySet().size()+" servers on it");
+                    case "connected"        :m.reply("This bot is actively connected to: "+god.getServers().size() +" servers");break;
+                    case "welcomeStatus"    :m.reply("The welcome message is: "+(specifics.get(sID).getWelcoming()?"on":"off"));break;
+                    case "welcomeMessage"   :m.reply("The Welcome Message is: "+specifics.get(sID).getWelcomeMessage());break;
+                    case "welcomeChannel"   :m.reply("The Welcome channel is: "+specifics.get(sID).getWelcChanID());break;
                 }
             }
         }else{
@@ -308,7 +327,7 @@ class CmdProcessor{
             if(send.contains("http://")||send.contains("https://")){
                 EmbedBuilder b = new EmbedBuilder();
                 b.setUrl(send.substring(send.indexOf("http")));
-                System.out.println(b);
+                //System.out.*(b);
                 m.reply(send,b);
             }else
                 m.reply(send);
@@ -343,11 +362,37 @@ class CmdProcessor{
             m.reply(send);
     }
     
+    private void sendDiagMessage(String servID, String chanID, String mess, boolean code){
+        if(mess.length()<2000)
+            god.getServerById(servID).getChannelById(chanID).sendMessage((code?"```"+mess.trim()+"```":mess.trim()));
+        else{
+            String t = mess.replaceAll("\n\n", "ΩΩ,");
+            t = t.replaceAll("\n", "ααα");
+            String[] mo = t.split("\\s");
+            boolean broken = false;
+            int trkr = 0;
+            String bu = "";
+            while(!broken){
+                if(bu.contains("")||(bu.length()+20)>2000||bu.contains("ΩΩ,")){
+                    bu=bu.replaceAll("ααα", "\n");
+                    bu=bu.replaceAll("ΩΩ,", "\n\n");
+                    god.getServerById(servID).getChannelById(chanID).sendMessage((code?"```"+bu.trim()+"```":bu.trim()));
+                    bu="";
+                }else{
+                    bu+=mo[trkr]+" ";
+                }
+                if(trkr<mo.length)
+                    trkr++;
+            }
+        }
+        
+    }
+    
     private void diagnostics(Message m){
         String ret="";
         if(authorize(m.getAuthor())){
             String chId = m.getChannelReceiver().getId();
-            String tID = thisServer.getId();
+            String tID = m.getChannelReceiver().getServer().getId();
             Server working = god.getServerById(this.getCurrentServerID(god, m));
             boolean limSta = specifics.get(tID).getLimitedStatus();
             
@@ -368,26 +413,29 @@ class CmdProcessor{
                 Iterator<String> i = specifics.keySet().iterator();
                 while(i.hasNext()){
                     String s = i.next();
-                    ret+="\n\nSpecific data mgr  :"+(s.equalsIgnoreCase(tID)?"This Server":"");
+                    if(s.equals(tID))
+                        continue;
+                    ret+="Specific data mgr  :"+(s.equalsIgnoreCase(tID)?"This Server":"");
                     ret+="\nServer ID\t: "+s;
                     ret+="\nServer Name\t: "+god.getServerById(s).getName();
-                    ret+=specifics.get(s);
+                    ret+=specifics.get(s)+"\n\n";
                 }
-                System.out.println(ret.length()+"\n\n\n");
-                try{m.wait(1);}catch(Exception e){}
-                if(ret.length()>2000){
-                    String[] rot = ret.split("\n\n");
-                    for(String s:rot){
-                        //try{god.wait(0,100);}catch(Exception e){}
-                        working.getChannelById(chId).sendMessage("```"+s+"```");
-                    }
-                }else{
-                    working.getChannelById(chId).sendMessage("```"+ret+"```");
-                }
+                
+                //System.out.*(ret.length()+"\n\n\n");
+                //try{m.wait(1);}catch(Exception e){}
+//                if(ret.length()>2000){
+//                    String[] rot = ret.split("\n\n");
+//                    for(String s:rot){
+//                        //try{god.wait(0,100);}catch(Exception e){}
+//                        //try{Thread.sleep(0,3000);}catch(Exception e){}
+//                        //System.out.println("\n\n"+s+"\n\n");
+//                        working.getChannelById(chId).sendMessage("```"+s+"```");
+//                    }
+//                }else{
+//                    working.getChannelById(chId).sendMessage("```"+ret+"```");
+//                }
+                this.sendDiagMessage(tID, chId, ret,true);
             }
-
-
-            ret+="```";
         }else{
             ret = "I'm sorry, I can't let you do that "+m.getAuthor().getMentionTag();
             m.getChannelReceiver().sendMessage(ret);
@@ -398,10 +446,10 @@ class CmdProcessor{
     
     private void authorizeProcessor(Message m){
         String payload = m.getContent().replaceAll("&authorize","").replaceAll("&auth","").trim();
-        System.out.println(payload);
+        //System.out.*(payload);
         
         String[] pyld = payload.split(" ");
-        System.out.println(Arrays.toString(pyld));
+        //System.out.*(Arrays.toString(pyld));
         switch(pyld[0]){
             case "list":m.reply("The following users are authorized to control this bot on this server:\n"+specifics.get(getCurrentServerID(god,m)).getAuthUsers());break;
             case "add":m.reply("The following user has been added to the Authorized users list.");specifics.get(getCurrentServerID(god,m)).addAuthUser(pyld[1].replaceAll("[<@!>]",""));break;
@@ -442,13 +490,7 @@ class CmdProcessor{
     }
     
     private String getCurrentServerID(DiscordAPI api, Message m){
-        String channelID = m.getReceiver().getId();
-        for(Server s:api.getServers())
-            if(s.getChannelById(channelID)!=null)
-                for(Channel c:s.getChannels())
-                    if(c.getId().equals(channelID))
-                        return s.getId();
-        return null;
+        return m.getChannelReceiver().getServer().getId();
     }
     
     private void sendMessage(DiscordAPI api, Message m,int l){
@@ -480,18 +522,18 @@ class CmdProcessor{
     private boolean expLoadData(DiscordAPI api){
         try{
             ArrayList<Server> wSL = new ArrayList<>(api.getServers());
-            System.out.println("\n\n\n\n\n");
+            //System.out.*("\n\n\n\n\n");
             
             for(Server s:wSL){
-                System.out.println(s.toString());
+                //System.out.*(s.toString());
                 ServerSpecifics temp = new ServerSpecifics();
-                System.out.println("Server Specs initialiazed...");
+                //System.out.*("Server Specs initialiazed...");
                 String parent = "s"+s.getId();
-                System.out.println("Parent directories identified...");
+                //System.out.*("Parent directories identified...");
                 File pDir = new File(parent);
                 if(!pDir.exists())
                     pDir.mkdir();
-                System.out.println("Establishing that parent directory exists...");
+                //System.out.*("Establishing that parent directory exists...");
                 File[] con = new File[5];
                 {
                     con[0] = new File(parent+File.separator+"010authUsers.nxs");
@@ -502,9 +544,9 @@ class CmdProcessor{
                     for(File f:con)
                         if(!f.exists()){
                             f.createNewFile();
-                            System.out.println("File not found... rectifying...");
+                            //System.out.*("File not found... rectifying...");
                         }else{
-                            System.out.println("File found...");
+                            //System.out.*("File found...");
                         }
                 }
                 
@@ -512,18 +554,18 @@ class CmdProcessor{
                 String tempo = "";
                 
                 for(int x=0;x<con.length;x++){
-                    System.out.println("Reading file "+(x+1)+" of "+con.length);
-                    System.out.println("File header reads: "+con[x].toString());
+                    //System.out.*("Reading file "+(x+1)+" of "+con.length);
+                    //System.out.*("File header reads: "+con[x].toString());
                     taco = new Scanner(con[x]);
                     tempo="";
-                    System.out.println("File scanner has been initialized...");
+                    //System.out.*("File scanner has been initialized...");
                     while(taco.hasNextLine())
                         tempo+=taco.nextLine()+"\n";
-                    System.out.println("Tempo string has been populated, contents: "+tempo.replaceAll("\n",", "));
+                    //System.out.*("Tempo string has been populated, contents: "+tempo.replaceAll("\n",", "));
                     String[] c = tempo.split("\n");
-                    System.out.println("Tempo string has been split along new lines, contents: "+Arrays.toString(c));
+                    //System.out.*("Tempo string has been split along new lines, contents: "+Arrays.toString(c));
                     if(tempo.length()<1){
-                        System.out.println("Nothing within tempo...");
+                        //System.out.*("Nothing within tempo...");
                     }else{
                         switch(x){
                             case 0:temp.setAuthUsers(c);System.out.println("Auth Users set...");break;

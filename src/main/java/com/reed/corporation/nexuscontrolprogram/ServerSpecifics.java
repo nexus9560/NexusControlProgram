@@ -22,21 +22,56 @@ public class ServerSpecifics {
     private String muteRoleId = null;
     
     private String muteChannel = null;
+    
+    private boolean welcoming = false;
+    
+    private String welcomeMess = null;
+    
+    private String welcChanID = null;
+    
+    private String botLog = null;
+    
+    private HashSet<String> authRoles = null;
+    
 
     ServerSpecifics(){
         //authUsers.add("103730295533993984");
     }
     
+    public void setBotLog(String s){
+        botLog = s.replaceAll("[<@#:>*]", "");
+    }
+    
+    public void setWelcChanID(String s){
+        welcChanID = s.replaceAll("[<:@#>*]", "");;
+    }
+    
+    public void setWelcoming(boolean b){
+        welcoming=b;
+    }
+    
+    public void setWelcomeMessage(String s){
+        welcomeMess=s;
+    }
+    
+    public void setWelcomeMessage(String[] s){
+        if(welcomeMess==null)
+            welcomeMess="";
+        for(int x=2;x<s.length;x++)
+            welcomeMess+=s[x]+" ";
+        welcomeMess = welcomeMess.replaceAll("null", "");
+    }
+    
     public void setMuteChannel(String s){
-        muteChannel = s;
+        muteChannel = s.replaceAll("[<:#@>*]", "");;
     }
     
     public void setMuteRoleId(String s){
-        muteRoleId = s;
+        muteRoleId = s.replaceAll("[<@#:>*]", "");;
     }
     
     public void setGuestRoleId(String s){
-        guestRoleId = s;
+        guestRoleId = s.replaceAll("[<@#:>*]", "");;
     }
     
     public void setLimitedStatus(boolean b){
@@ -71,6 +106,14 @@ public class ServerSpecifics {
             muteRoleId = c[2].split(":")[1];
         if(c.length>3)
             muteChannel = c[3].split(":")[1];
+        if(c.length>4)
+            welcoming = Boolean.parseBoolean(c[4].split(":")[1]);
+        if(c.length>5)
+            welcomeMess = c[5].split(":")[1];
+        if(c.length>6)
+            welcChanID = c[6].split(":")[1];
+        if(c.length>7)
+            botLog = c[7].split(":")[1];
     }
     
     public boolean addAuthUser(String u){
@@ -78,7 +121,7 @@ public class ServerSpecifics {
         Iterator<String> i = authUsers.iterator();
         while(i.hasNext()){
             String t = i.next();
-            System.out.println(t);
+            //System.out.*(t);
             if(t.length()!=18)
                 authUsers.remove(t);
         }
@@ -124,6 +167,14 @@ public class ServerSpecifics {
     public boolean confirmAuthorized(String u){
         return authUsers.contains(u);
     }
+    
+    public String getBotLog(){return botLog;}
+    
+    public String getWelcChanID(){return welcChanID;}
+    
+    public boolean getWelcoming(){return welcoming;}
+    
+    public String getWelcomeMessage(){return welcomeMess;}
     
     public String getMuteChannelId(){return muteChannel;}
     
@@ -194,6 +245,10 @@ public class ServerSpecifics {
         ret[4]+="guestID:"+guestRoleId+"\n";
         ret[4]+="muteRID:"+muteRoleId+"\n";
         ret[4]+="muteCID:"+muteChannel+"\n";
+        ret[4]+="welcomeStatus:"+(welcoming?1:0)+"\n";
+        ret[4]+="welcomeMess:"+welcomeMess+"\n";
+        ret[4]+="welcChanID:"+welcChanID+"\n";
+        ret[4]+="botLogChan:"+botLog+"\n";
         
         
         return ret;
@@ -210,6 +265,10 @@ public class ServerSpecifics {
         ret +="\tGuest Pass Role    : "+guestRoleId+"\n";
         ret +="\tMute Role ID       : "+muteRoleId+"\n";
         ret +="\tMute Channel ID    : "+muteChannel+"\n";
+        ret +="\tWelcome mess on/off: "+welcoming+"\n";
+        ret +="\tWelcome message    : "+welcomeMess+"\n";
+        ret +="\twelcChanID         : "+welcChanID+"\n";
+        ret +="\tBot Log Channel    : "+botLog+"\n";
         
         return ret;
     }
