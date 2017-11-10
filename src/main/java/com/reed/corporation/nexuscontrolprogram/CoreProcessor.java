@@ -161,6 +161,7 @@ class CmdProcessor{
             case "mute"         :muteAction(msg);break;
             case "quote"        :quoteProcessor(msg);break;
             case "reload"       :expLoadData(api);msg.reply("Reloading saved data...");break;
+            case "roll"         :rollCommand(msg);break;
             case "save"         :expSaveData(api);msg.reply("Saving data to file...");break;
             case "sudo"         :sudoActions(api, msg);break;
             case "unmute"       :unmuteAction(msg);break;
@@ -303,6 +304,71 @@ class CmdProcessor{
             message = "";
             scans.close();
         }catch(Exception e){}
+    }
+    
+    // "&roll 10d20 + 5"
+    // "&roll 5d20 - 9"
+    // "&roll 2d20"
+    // "&roll d20"
+    
+    private void rollCommand(Message m){
+        String cmd = m.getContent().replaceAll("&roll", "").trim();
+        // "10d20 + 5"
+        // "5d20 - 9"
+        // "2d20"
+        // "d20"
+        String[] cd = cmd.split(" ");
+        // {"10d20","+","5"}
+        // {"5d20","-","9"}
+        // {"2d20"}
+        // {"d20
+        String text = "The results "+m.getAuthor().getMentionTag()+" has requested: ";
+        String[] die=null;
+        if(cd[0].charAt(0)!='d')
+            die = cd[0].split("d");
+        if(!(die==null)){
+            int numdie = Integer.parseInt(die[0]);
+            int sides = Integer.parseInt(die[1]);
+            if(numdie>250){
+                m.reply("I seriously doubt you can hold that many dice, "+m.getAuthor().getMentionTag()+" try again with fewer (x <= 250).");
+                return;
+            }
+            if(sides>100){
+                m.reply("A die that big wouldn't even be balanced, "+m.getAuthor().getMentionTag()+" try again (x <= 100).");
+                return;
+            }
+            int[] rolls = new int[numdie];
+            for(int x=0;x<numdie;x++)
+                rolls[x] = roll(sides);
+            
+            for(int x=0;x<rolls.length;x++){
+                if(sides==20)
+                    switch(rolls[x]){
+                        case 1:text+= "__"+rolls[x]+"__ ";break;
+                        case 20:text+= "***"+rolls[x]+"*** ";break;
+                        default:text+= rolls[x]+" ";
+                    }
+                else
+                    text+=rolls[x]+" ";
+                if((x+1)!=rolls.length)
+                    text+="+ ";
+                else{
+                    int total = 0;
+                    for(int i:rolls)
+                        total+=i;
+                    text+= "= "+total;
+                }
+            }
+        }else{
+            text += roll(Integer.parseInt(cd[0].replaceAll("d","")));
+        }
+        m.reply(text);
+    }
+    
+    private int roll(int sides){
+        int ret = 0;
+        ret = (int)(Math.random()*sides);
+        return ret+1;
     }
     
     //&cmd add,, lookAtThem,, yadda yadda
