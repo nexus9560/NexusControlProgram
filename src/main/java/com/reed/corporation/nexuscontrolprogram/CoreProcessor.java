@@ -59,7 +59,7 @@ public class CoreProcessor {
                             }/*else if(mess.getContent().contains("F")&&mess.getContent().length()==1){
                                 reactionAddF(mess);
                             }*/
-                        }catch(NullPointerException e){
+                        }catch(Exception e){
                             e.printStackTrace();
                             String sentMessage = "I have crashed, here is the report: "+e.getMessage();
                             sentMessage+=      "\nIt happened on this server        : "+mess.getChannelReceiver().getServer().getName();
@@ -128,7 +128,7 @@ class CmdProcessor{
     }
     
     /*
-        $$kos add Maelstrom Dragons : Grade A Autist
+        $$kos add Test-Pilot : For testing things
     */
     
     public final void process(DiscordAPI api, Message msg){
@@ -161,11 +161,10 @@ class CmdProcessor{
             case "mute"         :muteAction(msg);break;
             case "quote"        :quoteProcessor(msg);break;
             case "reload"       :expLoadData(api);msg.reply("Reloading saved data...");break;
-            case "roll"         :rollCommand(msg);break;
+            case "roll"         :msg.reply(DiceRoll.roll(msg));break;
             case "save"         :expSaveData(api);msg.reply("Saving data to file...");break;
             case "sudo"         :sudoActions(api, msg);break;
             case "unmute"       :unmuteAction(msg);break;
-            //case "whois"        :InaraScraper.whois(msg.getContent().replaceAll("&whois ",""));break;
             case "help"         :helpAction(msg);break;
             case "welcome"      :welcomeAction(msg);break;
             default             :custCmdProc(msg);
@@ -210,8 +209,6 @@ class CmdProcessor{
             m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
     }
-    
-    //Because netbeans is a bitch sometimes
     
     private void guestPass(Message m){
         Server tws = m.getChannelReceiver().getServer();
@@ -306,70 +303,7 @@ class CmdProcessor{
         }catch(Exception e){}
     }
     
-    // "&roll 10d20 + 5"
-    // "&roll 5d20 - 9"
-    // "&roll 2d20"
-    // "&roll d20"
-    
-    private void rollCommand(Message m){
-        String cmd = m.getContent().replaceAll("&roll", "").trim();
-        // "10d20 + 5"
-        // "5d20 - 9"
-        // "2d20"
-        // "d20"
-        String[] cd = cmd.split(" ");
-        // {"10d20","+","5"}
-        // {"5d20","-","9"}
-        // {"2d20"}
-        // {"d20
-        String text = "The results "+m.getAuthor().getMentionTag()+" has requested: ";
-        String[] die=null;
-        if(cd[0].charAt(0)!='d')
-            die = cd[0].split("d");
-        if(!(die==null)){
-            int numdie = Integer.parseInt(die[0]);
-            int sides = Integer.parseInt(die[1]);
-            if(numdie>250){
-                m.reply("I seriously doubt you can hold that many dice, "+m.getAuthor().getMentionTag()+" try again with fewer (x <= 250).");
-                return;
-            }
-            if(sides>100){
-                m.reply("A die that big wouldn't even be balanced, "+m.getAuthor().getMentionTag()+" try again (x <= 100).");
-                return;
-            }
-            int[] rolls = new int[numdie];
-            for(int x=0;x<numdie;x++)
-                rolls[x] = roll(sides);
-            
-            for(int x=0;x<rolls.length;x++){
-                if(sides==20)
-                    switch(rolls[x]){
-                        case 1:text+= "__"+rolls[x]+"__ ";break;
-                        case 20:text+= "***"+rolls[x]+"*** ";break;
-                        default:text+= rolls[x]+" ";
-                    }
-                else
-                    text+=rolls[x]+" ";
-                if((x+1)!=rolls.length)
-                    text+="+ ";
-                else{
-                    int total = 0;
-                    for(int i:rolls)
-                        total+=i;
-                    text+= "= "+total;
-                }
-            }
-        }else{
-            text += roll(Integer.parseInt(cd[0].replaceAll("d","")));
-        }
-        m.reply(text);
-    }
-    
-    private int roll(int sides){
-        int ret = 0;
-        ret = (int)(Math.random()*sides);
-        return ret+1;
-    }
+    //Moved to DiceRoll.java
     
     //&cmd add,, lookAtThem,, yadda yadda
     private void custCommands(Message m){
@@ -381,6 +315,7 @@ class CmdProcessor{
         switch(pyld[0]){
             case "add":specifics.get(thisServer.getId()).addCustCmd(pyld[1],pyld[2]);m.reply("Command has been added!");break;
             case "remove":specifics.get(thisServer.getId()).deleteCmd(pyld[1]);m.reply("Command has been removed.");break;
+            case "list":m.reply("The custom commands for this server are...\n```"+specifics.get(thisServer.getId()).getCustCmds().keySet()+"```");break;
         }
     }
     
@@ -525,14 +460,12 @@ class CmdProcessor{
         
     }
     
-    //&kos add, Maelstrom Dragons, Sperglord
+    //&kos add, Test-Pilot, Lol he's a test pilot
     
     private void kosProcessor(Message m){
         String payload = m.getContent();
         payload = payload.replaceAll("&kos", "").trim();
-        //add, Maelstrom Dragons, Sperglord
         String[] pyld = payload.split(", ");
-        //["add", "Maelstrom Dragons", "Sperglord"]
         switch(pyld[0]){
             case "get":m.reply(specifics.get(thisServer.getId()).getKOS(pyld[1]));break;
             case "add":specifics.get(thisServer.getId()).addKOS(pyld[1],pyld[2]);m.reply("Pilot has been marked, go get'm!");break;
