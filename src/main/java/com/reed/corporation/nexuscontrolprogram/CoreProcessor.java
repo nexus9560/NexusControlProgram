@@ -44,7 +44,7 @@ public class CoreProcessor {
                         if(mess.getAuthor().getName().equalsIgnoreCase("McJamz")&&mess.getContent().contains("MAKE ME")){
                             mess.reply(mess.getAuthor().getMentionTag()+" no.");
                         }else if(!mess.getAuthor().isBot())
-                            if(mess.getContent().substring(0,2).contains("&")){
+                            if(mess.getContent().charAt(0)=='&'||mess.getContent().substring(0,2).contains("&")){
                                 if(working==null)
                                     working = new CmdProcessor(apc,mess);
                                 working.process(apc, mess);
@@ -61,18 +61,21 @@ public class CoreProcessor {
                             }*/
                         }catch(Exception e){
                             e.printStackTrace();
-                            String sentMessage = "I have crashed, here is the report: "+e.getMessage();
+                            String sentMessage = "Something happened here ya go     : "+e.getMessage();
                             sentMessage+=      "\nIt happened on this server        : "+mess.getChannelReceiver().getServer().getName();
                             sentMessage+=      "\nIn this thread                    : "+mess.getChannelReceiver().getName();
                             sentMessage+=      "\nBecause of this User              : "+mess.getAuthor().getName();
                             sentMessage+=      "\nWas trying to execute this cmd    : "+mess.getContent();
-                            god.getServerById("267380702708891648").getChannelById("339622824631205899").sendMessage("```"+sentMessage+"```");
+                            sentMessage+=      "\nWith Message ID                   : "+mess.getId();
+                            god.getServerById("156289196451954688").getChannelById("278226194103664640").sendMessage("```"+sentMessage+"```");
                         }
                     }
                 });
             }
             public void onFailure(Throwable t){
-                //god.getServerById("267380702708891648").getChannelById("339622824631205899").sendMessage("I have crashed, here is the report:\n"+t);
+                ProcessorCaller.main(null);
+                try{this.wait(500);}catch(InterruptedException e){}
+                System.exit(0);
             }
         });
     }
