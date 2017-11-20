@@ -52,7 +52,12 @@ public class CmdProcessor{
     }
     
     CmdProcessor(DiscordAPI apples){
-        god = apples;
+        if(god==null)
+            god = apples;
+        if(!aprldd){
+            expLoadData(apples);
+            aprldd = true;
+        }
     }
     
     CmdProcessor(DiscordAPI apples, Server s){
@@ -135,7 +140,7 @@ public class CmdProcessor{
     }
     
     private void unmuteAction(Message m){
-        if(authorize(m.getAuthor())){
+        if(authorize(m)){
             Server s = m.getChannelReceiver().getServer();
             String[] c = m.getContent().split(" ");
             for(int x=1;x<c.length;x++)
@@ -151,7 +156,7 @@ public class CmdProcessor{
     
     private void muteAction(Message m){
         //&mute %USER-ID
-        if(authorize(m.getAuthor())){
+        if(authorize(m)){
             Server s = m.getChannelReceiver().getServer();
             String[] c = m.getContent().split(" ");
             for(int x=1;x<c.length;x++)
@@ -180,7 +185,7 @@ public class CmdProcessor{
     }
     
     private void sudoActions(DiscordAPI a, Message m){
-        if(authorize(m.getAuthor())){
+        if(authorize(m)){
             Server serv = m.getChannelReceiver().getServer();
             String sID = serv.getId();
             //&sudo set guestID %GUEST-ID%
@@ -272,19 +277,41 @@ public class CmdProcessor{
     private void custCommands(Message m){
         //&cmd add,, lookAtThem,, yadda yadda
         String payload = m.getContent().replaceAll("&cmd","").trim();
+        String sID = m.getChannelReceiver().getServer().getId();
         //add| lookAtThem| yadda yadda
         String[] pyld = payload.split(",, ");
         //["add", "lookAtThem", "yadda yadda"]
+        /*
         switch(pyld[0]){
-            case "add":specifics.get(thisServer.getId()).addCustCmd(pyld[1],pyld[2]);m.reply("Command has been added!");break;
-            case "remove":specifics.get(thisServer.getId()).deleteCmd(pyld[1]);m.reply("Command has been removed.");break;
+            case "add":specifics.get(m.getChannelReceiver().getServer().getId()).addCustCmd(pyld[1],pyld[2]);m.reply("Command has been added!");break;
+            case "remove":specifics.get(m.getChannelReceiver().getServer().getId()).deleteCmd(pyld[1]);m.reply("Command has been removed.");break;
             case "list":m.reply("The custom commands for this server are...\n```"+specifics.get(thisServer.getId()).getCustCmds().keySet()+"```");break;
+        }
+        */
+        if(pyld[0].equals("add")){
+            if(specifics.get(sID).getCustCmds().containsKey(pyld[1])){
+                m.reply("Sorry that command already exists...");
+            }else{
+                specifics.get(sID).addCustCmd(pyld[1], pyld[2]);
+                m.reply("Command has been added!");
+            }
+        }else if(pyld[0].equals("remove")){
+            if(!specifics.get(sID).getCustCmds().containsKey(pyld[1])){
+                m.reply("Sorry that command doesn't exist...");
+            }else{
+                specifics.get(sID).deleteCmd(pyld[1]);
+                m.reply("Command has been removed");
+            }
+        }else if(pyld[0].equals("list")){
+            m.reply(specifics.get(sID).getCustCmds().keySet().toString());
+        }else{
+            
         }
     }
     
     private void custCmdProc(Message m){
         String send = "";
-        send = specifics.get(thisServer.getId()).chkCmd(m.getContent().replaceAll("&", ""));
+        send = specifics.get(m.getChannelReceiver().getServer().getId()).chkCmd(m.getContent().replaceAll("&", ""));
         if(send==null)
             snarkyResponse(m);
         else{
@@ -326,38 +353,12 @@ public class CmdProcessor{
             m.reply(send);
     }
     
-    private void sendDiagMessage(String servID, String chanID, String mess, boolean code){
-        if(mess.length()<2000)
-            god.getServerById(servID).getChannelById(chanID).sendMessage((code?"```"+mess.trim()+"```":mess.trim()));
-        else{
-            String t = mess.replaceAll("\n\n", "ΩΩ,");
-            t = t.replaceAll("\n", "ααα");
-            String[] mo = t.split("\\s");
-            boolean broken = false;
-            int trkr = 0;
-            String bu = "";
-            while(!broken){
-                if(bu.contains("")||(bu.length()+20)>2000||bu.contains("ΩΩ,")){
-                    bu=bu.replaceAll("ααα", "\n");
-                    bu=bu.replaceAll("ΩΩ,", "\n\n");
-                    god.getServerById(servID).getChannelById(chanID).sendMessage((code?"```"+bu.trim()+"```":bu.trim()));
-                    bu="";
-                }else{
-                    bu+=mo[trkr]+" ";
-                }
-                if(trkr<mo.length)
-                    trkr++;
-            }
-        }
-        
-    }
-    
     private void diagnostics(Message m){
         String ret="";
-        if(authorize(m.getAuthor())){
+        if(authorize(m)){
             String chId = m.getChannelReceiver().getId();
             String tID = m.getChannelReceiver().getServer().getId();
-            Server working = god.getServerById(this.getCurrentServerID(god, m));
+            Server working = m.getChannelReceiver().getServer();
             boolean limSta = specifics.get(tID).getLimitedStatus();
             
             ret+="This Server is     : "+working.getName()+"\n";
@@ -367,11 +368,11 @@ public class CmdProcessor{
                 ret+="HashMap db pop stat: "+specifics.keySet()+"\n";
                 ret+="Server Lists       : "+god.getServers()+"\n";
             }
-            ret+="Server Specific mgr: "+(specifics!=null?specifics.get(thisServer.getId()).toString()+"\n":"Data controller not loaded...\n");
+            ret+="Server Specific mgr: "+(specifics!=null?specifics.get(tID).toString()+"\n":"Data controller not loaded...\n");
             ret+="First run setup int: "+aprldd+"\n";
             ret+="Limited Mode       : "+specifics.get(tID).getLimitedStatus();
             //m.reply("```"+ret+"```");
-            god.getServerById(this.getCurrentServerID(god, m)).getChannelById(chId).sendMessage("```"+ret+"```");
+            god.getServerById(tID).getChannelById(chId).sendMessage("```"+ret+"```");
             ret="";
             if(specifics!=null&&(!limSta||limitedOverride(m))){
                 Iterator<String> i = specifics.keySet().iterator();
@@ -398,7 +399,13 @@ public class CmdProcessor{
 //                }else{
 //                    working.getChannelById(chId).sendMessage("```"+ret+"```");
 //                }
-                this.sendDiagMessage(tID, chId, ret,true);
+                for(String sqr:ret.split("\n\n")){
+                    String send = "```"+sqr+"```";
+                    if(send.length()>10){
+                        m.reply(send);
+                        try{god.wait(0, 200000000);}catch(Exception e){}
+                    }
+                }
             }
         }else{
             ret = "I'm sorry, I can't let you do that "+m.getAuthor().getMentionTag();
@@ -406,19 +413,109 @@ public class CmdProcessor{
         }
     }
     
-    private boolean limitedOverride(Message m){return m.getContent().contains("override")||!specifics.get(this.getCurrentServerID(god, m)).getLimitedStatus();}
+    private boolean limitedOverride(Message m){
+        return m.getContent().contains("override")||m.getContent().contains("ovr")||!specifics.get(this.getCurrentServerID(god, m)).getLimitedStatus();
+    }
     
     private void authorizeProcessor(Message m){
         String payload = m.getContent().replaceAll("&authorize","").replaceAll("&auth","").trim();
+        String sID = m.getChannelReceiver().getServer().getId();
         //System.out.*(payload);
         
         String[] pyld = payload.split(" ");
         //System.out.*(Arrays.toString(pyld));
+        if(!specifics.get(sID).confirmAuthorized(m.getAuthor().getId())||m.getContent().contains("Autofail authorized")){
+            m.reply("I'm sorry "+m.getAuthor().getMentionTag()+", I can't let you do that.");
+            return;
+        }
+        /*
         switch(pyld[0]){
             case "list":m.reply("The following users are authorized to control this bot on this server:\n"+specifics.get(getCurrentServerID(god,m)).getAuthUsers());break;
             case "add":m.reply("The following user has been added to the Authorized users list.");specifics.get(getCurrentServerID(god,m)).addAuthUser(pyld[1].replaceAll("[<@!>]",""));break;
             case "remove":m.reply("The following user has been removed from the Authorized users list.");specifics.get(getCurrentServerID(god,m)).removeAuth(pyld[1]);break;
             default:m.reply("Please use one of the following commands (note they are not case sensitive):\n```1- list\n2- add %UID-HERE%\n3- remove %UID-HERE%```");break;
+        }
+        */
+        if(pyld[0].equalsIgnoreCase("add")){
+            if(pyld[1].equals("role")){
+                if(pyld.length>3){
+                    for(int x=2;x<pyld.length;x++){
+                        specifics.get(sID).addAuthRole(pyld[x]);
+                    }
+                }else{
+                    specifics.get(sID).addAuthRole(pyld[2]);
+                }
+                m.reply("It has been done.");
+            }else if(pyld[1].equals("user")){
+                if(pyld.length>3)
+                    for(int x=2;x<pyld.length;x++){
+                        specifics.get(sID).addAuthUser(pyld[x]);
+                    }
+                else
+                    specifics.get(sID).addAuthUser(pyld[2]);
+            }else{
+                m.reply("Please format your add command like so:\n"
+                        + "```"
+                        + "&auth add user &USER-1& &USER-2& &USER-N&\n"
+                        + "or\n"
+                        + "&auth add role &ROLE-1& &ROLE-2& &ROLE-N&\n"
+                        + "Please note that in order for the role one to work you need the specific role IDs, which can be attained with '&lrids'"
+                        + "```");
+            }
+        }else if(pyld[0].equalsIgnoreCase("remove")){
+            if(pyld[1].equals("role")){
+                if(pyld.length>3){
+                    int count = 0;
+                    for(int x=2;x<pyld.length;x++){
+                        if(specifics.get(sID).getAuthRoles().contains(pyld[x])){
+                            specifics.get(sID).removeAuthRole(pyld[x]);
+                            count++;
+                        }
+                    }
+                    m.reply("Of the "+(pyld.length-2)+" roles you requested removed, there were "+count+" that were found and removed.");
+                }else{
+                    if(specifics.get(sID).getAuthRoles().contains(pyld[2])){
+                        specifics.get(sID).removeAuthRole(pyld[2]);
+                        m.reply("Role has been found and removed.");
+                    }else{
+                        m.reply("Sorry, that role isn't on the list.");
+                    }
+                }
+            }else if(pyld[1].equals("user")){
+                if(pyld.length>3){
+                    int count = 0;
+                    for(int x=2;x<pyld.length;x++){
+                        if(specifics.get(sID).getAuthUsers().contains(pyld[x])){
+                            specifics.get(sID).removeAuth(pyld[x]);
+                            count++;
+                        }
+                    }
+                    m.reply("Of the "+(pyld.length-2)+" Users you requested removed, there were "+count+" that were found and removed.");
+                }else{
+                    if(specifics.get(sID).getAuthUsers().contains(pyld[2])){
+                        specifics.get(sID).removeAuth(pyld[2]);
+                        m.reply("User has been found and removed.");
+                    }else{
+                        m.reply("Sorry, that User isn't on the list.");
+                    }
+                }
+            }else{
+                m.reply("Please format your add command like so:\n"
+                        + "```"
+                        + "&auth remove user &USER-1& &USER-2& &USER-N&\n"
+                        + "or\n"
+                        + "&auth remove role &ROLE-1& &ROLE-2& &ROLE-N&\n"
+                        + "Please note that in order for the role one to work you need the specific role IDs, which can be attained with '&lrids'"
+                        + "```");
+            }
+        }else if(pyld[0].equalsIgnoreCase("list")){
+            if(pyld[1].equals("role")){
+                m.reply(specifics.get(sID).getAuthRoles().toString());
+            }else if(pyld[1].equals("user")){
+                m.reply(specifics.get(sID).getAuthUsers().toString());
+            }else{
+                
+            }
         }
         
     }
@@ -463,12 +560,16 @@ public class CmdProcessor{
             }
     }
     
-    private boolean authorize(User u){
-        return u.getId().equals(myID)||specifics.get(thisServer.getId()).getAuthUsers().contains(u.getId());
+    private boolean authorize(Message m){
+        if(specifics.get(m.getChannelReceiver().getServer().getId()).getAuthUsers().contains(m.getAuthor().getId()))
+            return true;
+        else if(specifics.get(m.getChannelReceiver().getServer().getId()).compareRoles(m))
+            return true;
+        return false;
     }
     
     private void terminate(DiscordAPI api, Message msg,boolean force){
-        if(authorize(msg.getAuthor())||msg.getAuthor().getId().equals(myID)){
+        if(authorize(msg)||msg.getAuthor().getId().equals(myID)){
             expSaveData(api);
             if(!force){
                 msg.reply("But mom I\'m not tired!\n...\nFine, g'night!");
@@ -490,19 +591,20 @@ public class CmdProcessor{
                 //System.out.*(s.toString());
                 ServerSpecifics temp = new ServerSpecifics();
                 //System.out.*("Server Specs initialiazed...");
-                String parent = "s"+s.getId();
+                String parent = "S"+s.getId();
                 //System.out.*("Parent directories identified...");
                 File pDir = new File(parent);
                 if(!pDir.exists())
                     pDir.mkdir();
                 //System.out.*("Establishing that parent directory exists...");
-                File[] con = new File[5];
+                File[] con = new File[6];
                 {
                     con[0] = new File(parent+File.separator+"010authUsers.nxs");
-                    con[1] = new File(parent+File.separator+"020customCommands.nxs");
-                    con[2] = new File(parent+File.separator+"030killOnSite.nxs");
-                    con[3] = new File(parent+File.separator+"040quotes.nxs");
-                    con[4] = new File(parent+File.separator+"050miscSettings.nxs");
+                    con[1] = new File(parent+File.separator+"015authRoles.nxs");
+                    con[2] = new File(parent+File.separator+"020customCommands.nxs");
+                    con[3] = new File(parent+File.separator+"030killOnSite.nxs");
+                    con[4] = new File(parent+File.separator+"040quotes.nxs");
+                    con[5] = new File(parent+File.separator+"050miscSettings.nxs");
                     for(File f:con)
                         if(!f.exists()){
                             f.createNewFile();
@@ -531,10 +633,11 @@ public class CmdProcessor{
                     }else{
                         switch(x){
                             case 0:temp.setAuthUsers(c);System.out.println("Auth Users set...");break;
-                            case 1:temp.setCustCmds(c);System.out.println("Custom Commands set...");break;
-                            case 2:temp.setKOSList(c);System.out.println("KOS listings set...");break;
-                            case 3:temp.setQuotes(c);System.out.println("Quotes memorized...");break;
-                            case 4:temp.setSettings(c);System.out.println("Misc settings adjusted...");break;
+                            case 1:temp.setAuthRoles(c);System.out.println("Auth Roles set...");break;
+                            case 2:temp.setCustCmds(c);System.out.println("Custom Commands set...");break;
+                            case 3:temp.setKOSList(c);System.out.println("KOS listings set...");break;
+                            case 4:temp.setQuotes(c);System.out.println("Quotes memorized...");break;
+                            case 5:temp.setSettings(c);System.out.println("Misc settings adjusted...");break;
                         }
                     }
                 }
@@ -552,16 +655,17 @@ public class CmdProcessor{
         try{
         
             for(Server s:servL){
-                String parent = "s"+s.getId();
+                String parent = "S"+s.getId();
                 File pDir = new File(parent);
                 String[] du = specifics.get(s.getId()).dumpAll();
-                File[] con = new File[5];
+                File[] con = new File[6];
                 {
                     con[0] = new File(parent+File.separator+"010authUsers.nxs");
-                    con[1] = new File(parent+File.separator+"020customCommands.nxs");
-                    con[2] = new File(parent+File.separator+"030killOnSite.nxs");
-                    con[3] = new File(parent+File.separator+"040quotes.nxs");
-                    con[4] = new File(parent+File.separator+"050miscSettings.nxs");
+                    con[1] = new File(parent+File.separator+"015authRoles.nxs");
+                    con[2] = new File(parent+File.separator+"020customCommands.nxs");
+                    con[3] = new File(parent+File.separator+"030killOnSite.nxs");
+                    con[4] = new File(parent+File.separator+"040quotes.nxs");
+                    con[5] = new File(parent+File.separator+"050miscSettings.nxs");
                 }
                 PrintWriter[] pon = new PrintWriter[con.length];
                 for(int x=0;x<pon.length;x++){

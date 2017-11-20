@@ -1,5 +1,8 @@
 package com.reed.corporation.nexuscontrolprogram;
 
+import de.btobastian.javacord.entities.User;
+import de.btobastian.javacord.entities.message.Message;
+import de.btobastian.javacord.entities.permissions.Role;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +20,8 @@ public class ServerSpecifics {
     
     private final ArrayList<String> quotes = new ArrayList<>();
     
+    private final HashSet<String> authRoles = new HashSet<>();
+    
     private String guestRoleId = null;
     
     private String muteRoleId = null;
@@ -31,9 +36,6 @@ public class ServerSpecifics {
     
     private String botLog = null;
     
-    private HashSet<String> authRoles = null;
-    
-
     ServerSpecifics(){
         //authUsers.add("103730295533993984");
     }
@@ -55,23 +57,22 @@ public class ServerSpecifics {
     }
     
     public void setWelcomeMessage(String[] s){
-        if(welcomeMess==null)
-            welcomeMess="";
+        welcomeMess="";
         for(int x=2;x<s.length;x++)
             welcomeMess+=s[x]+" ";
         welcomeMess = welcomeMess.replaceAll("null", "");
     }
     
     public void setMuteChannel(String s){
-        muteChannel = s.replaceAll("[<:#@>*]", "");;
+        muteChannel = s.replaceAll("[<:#@>*]", "");
     }
     
     public void setMuteRoleId(String s){
-        muteRoleId = s.replaceAll("[<@#:>*]", "");;
+        muteRoleId = s.replaceAll("[<@#:>*]", "");
     }
     
     public void setGuestRoleId(String s){
-        guestRoleId = s.replaceAll("[<@#:>*]", "");;
+        guestRoleId = s.replaceAll("[<@#:>*]", "");
     }
     
     public void setLimitedStatus(boolean b){
@@ -98,6 +99,12 @@ public class ServerSpecifics {
             quotes.add(s);
     }
     
+    public void setAuthRoles(String[] c){
+        for(String s:c){
+            authRoles.add(s);
+        }
+    }
+    
     public void setSettings(String[] c){
         limited = c[0].contains("1");
         if(c.length>1)
@@ -107,7 +114,7 @@ public class ServerSpecifics {
         if(c.length>3)
             muteChannel = c[3].split(":")[1];
         if(c.length>4)
-            welcoming = Boolean.parseBoolean(c[4].split(":")[1]);
+            welcoming = c[4].contains("1");
         if(c.length>5)
             welcomeMess = c[5].split(":")[1];
         if(c.length>6)
@@ -164,8 +171,16 @@ public class ServerSpecifics {
         authUsers.remove(s);
     }
     
+    public void removeAuthRole(String s){
+        authRoles.remove(s);
+    }
+    
     public boolean confirmAuthorized(String u){
-        return authUsers.contains(u);
+        return authUsers.contains(u)||authRoles.contains(u);
+    }
+    
+    public boolean addAuthRole(String u){
+        return authRoles.add(u.replaceAll("[<@#:>*]",""));
     }
     
     public String getBotLog(){return botLog;}
@@ -207,6 +222,8 @@ public class ServerSpecifics {
     
     public HashSet<String> getAuthUsers(){return authUsers;}
     
+    public HashSet<String> getAuthRoles(){return authRoles;}
+    
     public HashMap<String,String> getCustCmds(){return custCmds;}
     
     public HashMap<String,String> getKOSList(){return kos;}
@@ -220,35 +237,48 @@ public class ServerSpecifics {
         return ret;
     }
     
+    public boolean compareRoles(Message m){
+        User u = m.getAuthor();
+        for(Role r:u.getRoles(m.getChannelReceiver().getServer()))
+            if(authRoles.contains(r.getId()))
+                return true;
+        return false;
+    }
+    
     public String[] dumpAll(){
-        String[] ret=new String[5];
+        String[] ret=new String[6];
         for(int x=0;x<ret.length;x++)
             ret[x]="";
         Iterator<String> i = authUsers.iterator();
         while(i.hasNext())
             ret[0]+=i.next()+"\n";
         
+        i = authRoles.iterator();
+        while(i.hasNext())
+            ret[1]+=i.next()+"\n";
+        
+        
         i = custCmds.keySet().iterator();
         while(i.hasNext()){
             String t = i.next();
-            ret[1]+=t+",,"+custCmds.get(t)+"\n";
+            ret[2]+=t+",,"+custCmds.get(t)+"\n";
         }
         i = kos.keySet().iterator();
         while(i.hasNext()){
             String t = i.next();
-            ret[2]+=t+",,"+kos.get(t)+"\n";
+            ret[3]+=t+",,"+kos.get(t)+"\n";
         }
         for(String s:quotes)
-            ret[3]+=s+"\n";
+            ret[4]+=s+"\n";
         
-        ret[4]+="limited:"+(limited?1:0)+"\n";
-        ret[4]+="guestID:"+guestRoleId+"\n";
-        ret[4]+="muteRID:"+muteRoleId+"\n";
-        ret[4]+="muteCID:"+muteChannel+"\n";
-        ret[4]+="welcomeStatus:"+(welcoming?1:0)+"\n";
-        ret[4]+="welcomeMess:"+welcomeMess+"\n";
-        ret[4]+="welcChanID:"+welcChanID+"\n";
-        ret[4]+="botLogChan:"+botLog+"\n";
+        ret[5]+="limited:"+(limited?1:0)+"\n";
+        ret[5]+="guestID:"+guestRoleId+"\n";
+        ret[5]+="muteRID:"+muteRoleId+"\n";
+        ret[5]+="muteCID:"+muteChannel+"\n";
+        ret[5]+="welcomeStatus:"+(welcoming?1:0)+"\n";
+        ret[5]+="welcomeMess:"+welcomeMess+"\n";
+        ret[5]+="welcChanID:"+welcChanID+"\n";
+        ret[5]+="botLogChan:"+botLog+"\n";
         
         
         return ret;
@@ -258,6 +288,7 @@ public class ServerSpecifics {
         String ret = "\n";
         
         ret +="\tAuthorized Users   : "+authUsers.toString()+"\n";
+        ret +="\tAuthorized Roles   : "+authRoles.toString()+"\n";
         ret +="\tCustom Commands    : "+custCmds.keySet().size()+"\n";
         ret +="\tKill On Sight tgt  : "+kos.keySet().size()+"\n";
         ret +="\tQuotes             : "+quotes.size()+"\n";

@@ -44,7 +44,7 @@ public class CoreProcessor {
         {
             public void onSuccess(DiscordAPI apo){
                 apo.registerListener(mo);
-                working = new CmdProcessor(apo,apo.getServerById("156289196451954688"));
+                working = new CmdProcessor(apo);
             }
             public void onFailure(Throwable t){
                 ProcessorCaller.main(null);
@@ -58,23 +58,23 @@ public class CoreProcessor {
     }
     
     private void launchGUIBackend(){
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } 
-        catch (Exception e) {
-           // handle exception
-        }
+        
+        try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}catch (Exception e){}
+        
         backend = new JFrame();
         backend.setSize(640, 480);
         backend.setResizable(false);
         backend.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         backend.setLocationRelativeTo(null);
         backend.setTitle("Nexus Control Program");
+        
+        
+        
         JButton sAQ = new JButton("Save");
         sAQ.setSize(sAQ.getPreferredSize());
         sAQ.addActionListener(new SaveAndQuitListener());
-        backend.add(sAQ);
         
+        backend.add(sAQ);
         backend.setVisible(true);
     }
     
