@@ -1,4 +1,4 @@
-/*
+ /*
 */
 package com.reed.corporation.nexuscontrolprogram;
 
@@ -55,6 +55,7 @@ public class CoreProcessor {
     }
     
     private void reactionAddF(Message m){
+        m.addUnicodeReaction("🇫");
     }
     
     private void launchGUIBackend(){
@@ -86,11 +87,11 @@ public class CoreProcessor {
     class GeneralListener implements MessageCreateListener, MessageEditListener, MessageDeleteListener, ServerJoinListener, ServerLeaveListener, ServerMemberAddListener{
         public void onMessageCreate(DiscordAPI apc, Message mess){
                         try{
-                        if(mess.getAuthor().getName().equalsIgnoreCase("McJamz")&&mess.getContent().contains("MAKE ME")){
-                            mess.reply(mess.getAuthor().getMentionTag()+" no.");
-                        }else if(!mess.getAuthor().isBot())
-                            System.out.println(mess.getContent().charAt(0)==38);
-                            if(mess.getContent().charAt(0)==38||mess.getContent().substring(0,2).contains("&")){
+                            if((mess.getAuthor().getName().equalsIgnoreCase("McJamz")||mess.getAuthor().getId().equals("119858780312829952"))&&mess.getContent().contains("MAKE ME")){
+                                mess.reply(mess.getAuthor().getMentionTag()+" no.");
+                            }else if(!mess.getAuthor().isBot())
+                                System.out.println(mess.getContent().charAt(0)==38);
+                            if(mess.getContent().charAt(0)==38||(mess.getContent().length()>2&&mess.getContent().substring(0,2).contains("&"))){
                                 if(working==null)
                                     working = new CmdProcessor(apc,mess);
                                 working.process(apc, mess);
@@ -102,9 +103,9 @@ public class CoreProcessor {
                                 mess.reply("\\o\\");
                             else if(bieberDetector(mess)){
                                 mess.reply("!ban "+mess.getAuthor().getMentionTag());
-                            }/*else if(mess.getContent().contains("F")&&mess.getContent().length()==1){
+                            }else if(mess.getContent().equalsIgnoreCase("F")&&mess.getContent().length()==1){
                                 reactionAddF(mess);
-                            }*/
+                            }
                         }catch(Exception e){
                             e.printStackTrace();
                             String sentMessage = "Something happened here ya go     : "+e.getMessage();

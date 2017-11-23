@@ -22,6 +22,8 @@ public class ServerSpecifics {
     
     private final HashSet<String> authRoles = new HashSet<>();
     
+    private final MuteManager muteMan = new MuteManager();
+    
     private String guestRoleId = null;
     
     private String muteRoleId = null;
@@ -38,6 +40,10 @@ public class ServerSpecifics {
     
     ServerSpecifics(){
         //authUsers.add("103730295533993984");
+    }
+    
+    public void autoUnMute(){
+        muteMan.autoUnmute();
     }
     
     public void setBotLog(String s){
@@ -123,6 +129,10 @@ public class ServerSpecifics {
             botLog = c[7].split(":")[1];
     }
     
+    public void mutePerson(String id){
+        muteMan.addMute(id, System.currentTimeMillis());
+    }
+    
     public boolean addAuthUser(String u){
         authUsers.add(u.trim());
         Iterator<String> i = authUsers.iterator();
@@ -175,12 +185,22 @@ public class ServerSpecifics {
         authRoles.remove(s);
     }
     
+    public void unmutePerson(String id){
+        muteMan.removeMute(id);
+    }
+    
+    public String runAutoUnmute(){return muteMan.autoUnmute();}
+    
     public boolean confirmAuthorized(String u){
         return authUsers.contains(u)||authRoles.contains(u);
     }
     
     public boolean addAuthRole(String u){
         return authRoles.add(u.replaceAll("[<@#:>*]",""));
+    }
+    
+    public void checkMuted(){
+        
     }
     
     public String getBotLog(){return botLog;}
@@ -198,6 +218,8 @@ public class ServerSpecifics {
     public String getGuessPassId(){return guestRoleId;}
     
     public boolean getLimitedStatus(){return limited;}
+    
+    public String getMuted(){return muteMan.toString();}
     
     public String getKOS(String s){
         String ret = "";

@@ -92,6 +92,9 @@ public class CmdProcessor{
     public final void process(DiscordAPI api, Message msg){
         
         ////System.out.*(god.toString());
+        Iterator<String> i = specifics.keySet().iterator();
+        while(i.hasNext())
+            specifics.get(i.next()).autoUnMute();
         
         if(msg.getContent().contains("&kys"))
             terminate(api,msg,true);
@@ -122,6 +125,7 @@ public class CmdProcessor{
             case "roll"         :msg.reply(DiceRoll.roll(msg));break;
             case "save"         :expSaveData(api);msg.reply("Saving data to file...");break;
             case "sudo"         :sudoActions(api, msg);break;
+            case "sysTime"      :msg.reply(System.currentTimeMillis()+"");break;
             case "unmute"       :unmuteAction(msg);break;
             case "help"         :helpAction(msg);break;
             default             :custCmdProc(msg);
@@ -147,8 +151,10 @@ public class CmdProcessor{
                 c[x] = c[x].replaceAll("[<@!>]","");
             String i = s.getId();
             Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
-            for(int x=1;x<c.length;x++)
+            for(int x=1;x<c.length;x++){
                 mute.removeUser(s.getMemberById(c[x]));
+                specifics.get(i).unmutePerson(c[x]);
+            }
         }else{
             m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
@@ -163,8 +169,10 @@ public class CmdProcessor{
                 c[x] = c[x].replaceAll("[<@!>]","");
             String i = s.getId();
             Role mute = s.getRoleById(specifics.get(i).getMuteRoleId());
-            for(int x=1;x<c.length;x++)
+            for(int x=1;x<c.length;x++){
                 mute.addUser(s.getMemberById(c[x]));
+                specifics.get(i).mutePerson(c[x]);
+            }
             for(int x=1;x<c.length;x++)
                 s.getChannelById(specifics.get(i).getMuteChannelId()).sendMessage("Welcome to Purge-atory "+s.getMemberById(c[x]).getMentionTag()+", please enjoy your stay.");
         }else{
@@ -317,12 +325,26 @@ public class CmdProcessor{
         else{
             if(send.contains("http://")||send.contains("https://")){
                 EmbedBuilder b = new EmbedBuilder();
-                b.setUrl(send.substring(send.indexOf("http")));
-                //System.out.*(b);
-                m.reply(send,b);
+                String[] urls = parseURLs(send);
+                String noURLs = parseOutURLs(send);
             }else
-                m.reply(send);
+                m.reply(send.replaceAll("&USER&",m.getAuthor().getMentionTag()));
         }
+    }
+    
+    private String parseOutURLs(String s){
+        String ret = "";
+        
+        return ret;
+    }
+    
+    private String[] parseURLs(String s){
+        String[] tomato = s.split("\\s");
+        for(int x=0;x<tomato.length;x++)
+            tomato[x]=tomato[x].replaceAll(",","");
+        String[] ret = null;
+        
+        return ret;
     }
     
     private int greaterThanZero(String s){
