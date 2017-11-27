@@ -5,6 +5,7 @@ package com.reed.corporation.nexuscontrolprogram;
 import com.google.common.util.concurrent.FutureCallback;
 import de.btobastian.javacord.DiscordAPI;
 import de.btobastian.javacord.Javacord;
+import de.btobastian.javacord.entities.Channel;
 import de.btobastian.javacord.entities.Server;
 import de.btobastian.javacord.entities.User;
 import de.btobastian.javacord.entities.message.Message;
@@ -120,6 +121,10 @@ public class CoreProcessor {
 
         @Override
         public void onMessageDelete(DiscordAPI dapi, Message msg) {
+            if(msg.getContent().contains("fuck off <@119858780312829952>")){
+                Channel c = msg.getChannelReceiver();
+                c.sendMessage("Bad <@296755073529413632>! Knock that off.");
+            }
         }
 
         @Override
