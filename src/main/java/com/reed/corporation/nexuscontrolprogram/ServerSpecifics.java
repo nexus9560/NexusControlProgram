@@ -22,6 +22,8 @@ public class ServerSpecifics {
     
     private final HashSet<String> authRoles = new HashSet<>();
     
+    private final HashSet<String> ignoredUsers = new HashSet<>();
+    
     private final MuteManager muteMan = new MuteManager();
     
     private String guestRoleId = null;
@@ -44,6 +46,11 @@ public class ServerSpecifics {
     
     public void autoUnMute(){
         muteMan.autoUnmute();
+    }
+    
+    public void setIgnoredUsers(String[] s){
+        for(String q:s)
+            ignoredUsers.add(q.replaceAll("[<:@#>*]",""));
     }
     
     public void setBotLog(String s){
@@ -193,6 +200,13 @@ public class ServerSpecifics {
     
     public boolean confirmAuthorized(String u){
         return authUsers.contains(u)||authRoles.contains(u);
+    }
+    
+    public boolean addIgnoredUser(String[] s){
+        HashSet<String> temp = new HashSet<>();
+        for(String q:s)
+            temp.add(q.replaceAll("[<@#:>*]",""));
+        return ignoredUsers.addAll(temp);
     }
     
     public boolean addAuthRole(String u){
