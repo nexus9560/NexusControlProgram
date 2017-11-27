@@ -48,6 +48,8 @@ public class ServerSpecifics {
         muteMan.autoUnmute();
     }
     
+    public boolean isIgnored(String s){return ignoredUsers.contains(s);}
+    
     public void setIgnoredUsers(String[] s){
         for(String q:s)
             ignoredUsers.add(q.replaceAll("[<:@#>*]",""));
@@ -114,7 +116,7 @@ public class ServerSpecifics {
     
     public void setAuthRoles(String[] c){
         for(String s:c){
-            authRoles.add(s);
+            authRoles.add(s.replaceAll("[<@#$&!*]",""));
         }
     }
     
@@ -300,39 +302,43 @@ public class ServerSpecifics {
     }
     
     public String[] dumpAll(){
-        String[] ret=new String[6];
+        String[] ret=new String[7];
         for(int x=0;x<ret.length;x++)
             ret[x]="";
         Iterator<String> i = authUsers.iterator();
         while(i.hasNext())
             ret[0]+=i.next()+"\n";
         
-        i = authRoles.iterator();
+        i = ignoredUsers.iterator();
         while(i.hasNext())
             ret[1]+=i.next()+"\n";
+        
+        i = authRoles.iterator();
+        while(i.hasNext())
+            ret[2]+=i.next()+"\n";
         
         
         i = custCmds.keySet().iterator();
         while(i.hasNext()){
             String t = i.next();
-            ret[2]+=t+",,"+custCmds.get(t)+"\n";
+            ret[3]+=t+",,"+custCmds.get(t)+"\n";
         }
         i = kos.keySet().iterator();
         while(i.hasNext()){
             String t = i.next();
-            ret[3]+=t+",,"+kos.get(t)+"\n";
+            ret[4]+=t+",,"+kos.get(t)+"\n";
         }
         for(String s:quotes)
-            ret[4]+=s+"\n";
+            ret[5]+=s+"\n";
         
-        ret[5]+="limited:"+(limited?1:0)+"\n";
-        ret[5]+="guestID:"+guestRoleId+"\n";
-        ret[5]+="muteRID:"+muteRoleId+"\n";
-        ret[5]+="muteCID:"+muteChannel+"\n";
-        ret[5]+="welcomeStatus:"+(welcoming?1:0)+"\n";
-        ret[5]+="welcomeMess:"+welcomeMess+"\n";
-        ret[5]+="welcChanID:"+welcChanID+"\n";
-        ret[5]+="botLogChan:"+botLog+"\n";
+        ret[6]+="limited:"+(limited?1:0)+"\n";
+        ret[6]+="guestID:"+guestRoleId+"\n";
+        ret[6]+="muteRID:"+muteRoleId+"\n";
+        ret[6]+="muteCID:"+muteChannel+"\n";
+        ret[6]+="welcomeStatus:"+(welcoming?1:0)+"\n";
+        ret[6]+="welcomeMess:"+welcomeMess+"\n";
+        ret[6]+="welcChanID:"+welcChanID+"\n";
+        ret[6]+="botLogChan:"+botLog+"\n";
         
         
         return ret;
@@ -342,6 +348,7 @@ public class ServerSpecifics {
         String ret = "\n";
         
         ret +="\tAuthorized Users   : "+authUsers.toString()+"\n";
+        ret +="\tIgnored Users      : "+ignoredUsers.toString()+"\n";
         ret +="\tAuthorized Roles   : "+authRoles.toString()+"\n";
         ret +="\tCustom Commands    : "+custCmds.keySet().size()+"\n";
         ret +="\tKill On Sight tgt  : "+kos.keySet().size()+"\n";

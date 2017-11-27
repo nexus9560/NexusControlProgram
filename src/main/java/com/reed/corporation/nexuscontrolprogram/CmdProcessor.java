@@ -93,9 +93,18 @@ public class CmdProcessor{
     public final void process(DiscordAPI api, Message msg){
         
         ////System.out.*(god.toString());
+        
+        
         Iterator<String> i = specifics.keySet().iterator();
         while(i.hasNext())
             specifics.get(i.next()).autoUnMute();
+        
+        String sID = msg.getChannelReceiver().getServer().getId();
+        
+        if(specifics.get(sID).isIgnored(msg.getAuthor().getId())){
+            msg.reply("I'm sorry, "+msg.getAuthor().getMentionTag()+", I've been told not to listen to you.");
+            return;
+        }
         
         if(msg.getContent().contains("&kys")&&msg.getAuthor().getId().equals("103730295533993984"))
             terminate(api,msg,true);
@@ -106,7 +115,7 @@ public class CmdProcessor{
         String cmd = msg.getContent();
         if(cmd.contains(" "))
             cmd = cmd.substring(0, msg.getContent().indexOf(" "));
-        cmd = cmd.replaceAll("&","");
+        cmd = cmd.replaceAll("&","").toLowerCase();
         
         switch(cmd){
             case "auth"         :
@@ -115,6 +124,7 @@ public class CmdProcessor{
             case "diag"         :
             case "diagnostics"  :diagnostics(msg);break;
             case "guestPass"    :guestPass(msg);break;
+            case "ignore"       :ignoreProcessor(msg);break;
             case "kos"          :kosProcessor(msg);break;
             case "lmds"         :
             case "listMsgDtls"  :listMessageDetails(api, msg);break;
@@ -132,6 +142,39 @@ public class CmdProcessor{
             default             :custCmdProc(msg);
         }
         
+    }
+    
+    public void ignoreProcessor(Message m){
+        if(authorize(m)){
+            String sID = m.getChannelReceiver().getServer().getId();
+            String q = m.getContent().replaceAll("&ignore", "").trim();
+            String[] pyld = q.split(" ");
+            //{"add", "&USER-ID&"}
+            //{"add", "&USER-ID&", "&USER-UD&"}
+            if(pyld[0].equalsIgnoreCase("add")){
+                if(pyld.length>2){
+                    for(int x=1;x<pyld.length;x++){
+                        specifics.get(sID).addIgnoredUser(pyld[x].replaceAll("[<!@#&>*]",""));
+                    }
+                    m.reply("Users have been ignored.");
+                }else{
+                    specifics.get(sID).addIgnoredUser(pyld[1].replaceAll("[<!@#&>*]",""));
+                    m.reply("User has been ignored.");
+                }
+            }else if(pyld[0].equalsIgnoreCase("remove")){
+                if(pyld.length>2){
+                    for(int x=1;x<pyld.length;x++){
+                        specifics.get(sID).removeIgnored(pyld[x].replaceAll("[<!@#&>*]",""));
+                    }
+                    m.reply("Users have been un... ignored...? yea...");
+                }else{
+                    specifics.get(sID).removeIgnored(pyld[1].replaceAll("[<!@#&>*]",""));
+                    m.reply("User has been un... ignored...? yea...");
+                }
+            }
+        }else{
+            m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't do that.");
+        }
     }
     
     public void sendServerWelcomeMessage(Server s, User u){
@@ -449,6 +492,10 @@ public class CmdProcessor{
         String[] pyld = payload.split(" ");
         System.out.println(Arrays.toString(pyld));
         String taco = "";
+        if(pyld.length>=2)
+            for(int x=2;x<pyld.length;x++)
+                pyld[x] = pyld[x].replaceAll("[<@#&!>*]", "");
+        
         for(String q:pyld)
             taco+=q+"\n";
         System.out.println(taco);
@@ -459,19 +506,44 @@ public class CmdProcessor{
             // command would look like {"add", "user", "<@1234567890>"}
             if(pyld[0].equalsIgnoreCase("add")){
                 if(pyld[1].equalsIgnoreCase("user")){
-                    specifics.get(sID).addAuthUser(pyld[2]);
-                    m.reply("user confirmed!");
+                    if(pyld.length==3){
+                        specifics.get(sID).addAuthUser(pyld[2]);
+                        m.reply("User confirmed!");
+                    }else{
+                        for(int x=2;x<pyld.length;x++){
+                            specifics.get(sID).addAuthUser(pyld[x]);
+                        }
+                    }
                 }else if(pyld[1].equalsIgnoreCase("role")){
-                    specifics.get(sID).addAuthRole(pyld[2]);
-                    m.reply("role confirmed!");
+                    if(pyld.length==3){
+                        specifics.get(sID).addAuthRole(pyld[2]);
+                        m.reply("Role confirmed!");
+                    }else{
+                        for(int x=2;x<pyld.length;x++){
+                            specifics.get(sID).addAuthRole(pyld[x]);
+                        }
+                    }
                 }else{
-                    
                 }
             }else if(pyld[0].equalsIgnoreCase("remove")){
                 if(pyld[1].equalsIgnoreCase("user")){
-                    m.reply("user removed!");
+                    if(pyld.length==3){
+                        specifics.get(sID).removeAuth(pyld[2]);
+                        m.reply("User removed!");
+                    }else{
+                        for(int x=2;x<pyld.length;x++){
+                            specifics.get(sID).removeAuth(pyld[x]);
+                        }
+                    }
                 }else if(pyld[1].equalsIgnoreCase("role")){
-                    m.reply("role removed!");
+                    if(pyld.length==3){
+                        specifics.get(sID).removeAuthRole(pyld[2]);
+                        m.reply("Role removed!");
+                    }else{
+                        for(int x=2;x<pyld.length;x++){
+                            specifics.get(sID).removeAuthRole(pyld[x]);
+                        }
+                    }
                 }
             }else if(pyld[0].equalsIgnoreCase("list")){
                 if(pyld[1].equalsIgnoreCase("user")){
@@ -655,29 +727,30 @@ public class CmdProcessor{
             //System.out.*("\n\n\n\n\n");
             
             for(Server s:wSL){
-                //System.out.*(s.toString());
+                System.out.println(s.toString());
                 ServerSpecifics temp = new ServerSpecifics();
-                //System.out.*("Server Specs initialiazed...");
+                System.out.println("Server Specs initialiazed...");
                 String parent = "S"+s.getId();
-                //System.out.*("Parent directories identified...");
+                System.out.println("Parent directories identified...");
                 File pDir = new File(parent);
                 if(!pDir.exists())
                     pDir.mkdir();
-                //System.out.*("Establishing that parent directory exists...");
-                File[] con = new File[6];
+                System.out.println("Establishing that parent directory exists...");
+                File[] con = new File[7];
                 {
                     con[0] = new File(parent+File.separator+"010authUsers.nxs");
-                    con[1] = new File(parent+File.separator+"015authRoles.nxs");
-                    con[2] = new File(parent+File.separator+"020customCommands.nxs");
-                    con[3] = new File(parent+File.separator+"030killOnSite.nxs");
-                    con[4] = new File(parent+File.separator+"040quotes.nxs");
-                    con[5] = new File(parent+File.separator+"050miscSettings.nxs");
+                    con[1] = new File(parent+File.separator+"013ignoredUsers.nxs");
+                    con[2] = new File(parent+File.separator+"015authRoles.nxs");
+                    con[3] = new File(parent+File.separator+"020customCommands.nxs");
+                    con[4] = new File(parent+File.separator+"030killOnSite.nxs");
+                    con[5] = new File(parent+File.separator+"040quotes.nxs");
+                    con[6] = new File(parent+File.separator+"050miscSettings.nxs");
                     for(File f:con)
                         if(!f.exists()){
                             f.createNewFile();
-                            //System.out.*("File not found... rectifying...");
+                            System.out.println("File not found... rectifying...");
                         }else{
-                            //System.out.*("File found...");
+                            System.out.println("File found...");
                         }
                 }
                 
@@ -685,26 +758,27 @@ public class CmdProcessor{
                 String tempo = "";
                 
                 for(int x=0;x<con.length;x++){
-                    //System.out.*("Reading file "+(x+1)+" of "+con.length);
-                    //System.out.*("File header reads: "+con[x].toString());
+                    System.out.println("Reading file "+(x+1)+" of "+con.length);
+                    System.out.println("File header reads: "+con[x].toString());
                     taco = new Scanner(con[x]);
                     tempo="";
-                    //System.out.*("File scanner has been initialized...");
+                    System.out.println("File scanner has been initialized...");
                     while(taco.hasNextLine())
                         tempo+=taco.nextLine()+"\n";
-                    //System.out.*("Tempo string has been populated, contents: "+tempo.replaceAll("\n",", "));
+                    System.out.println("Tempo string has been populated, contents: "+tempo.replaceAll("\n",", "));
                     String[] c = tempo.split("\n");
-                    //System.out.*("Tempo string has been split along new lines, contents: "+Arrays.toString(c));
+                    System.out.println("Tempo string has been split along new lines, contents: "+Arrays.toString(c));
                     if(tempo.length()<1){
-                        //System.out.*("Nothing within tempo...");
+                        System.out.println("Nothing within tempo...");
                     }else{
                         switch(x){
                             case 0:temp.setAuthUsers(c);System.out.println("Auth Users set...");break;
-                            case 1:temp.setAuthRoles(c);System.out.println("Auth Roles set...");break;
-                            case 2:temp.setCustCmds(c);System.out.println("Custom Commands set...");break;
-                            case 3:temp.setKOSList(c);System.out.println("KOS listings set...");break;
-                            case 4:temp.setQuotes(c);System.out.println("Quotes memorized...");break;
-                            case 5:temp.setSettings(c);System.out.println("Misc settings adjusted...");break;
+                            case 1:temp.setIgnoredUsers(c);System.out.println("Ignored Users set...");break;
+                            case 2:temp.setAuthRoles(c);System.out.println("Auth Roles set...");break;
+                            case 3:temp.setCustCmds(c);System.out.println("Custom Commands set...");break;
+                            case 4:temp.setKOSList(c);System.out.println("KOS listings set...");break;
+                            case 5:temp.setQuotes(c);System.out.println("Quotes memorized...");break;
+                            case 6:temp.setSettings(c);System.out.println("Misc settings adjusted...");break;
                         }
                     }
                 }
@@ -725,14 +799,15 @@ public class CmdProcessor{
                 String parent = "S"+s.getId();
                 File pDir = new File(parent);
                 String[] du = specifics.get(s.getId()).dumpAll();
-                File[] con = new File[6];
+                File[] con = new File[7];
                 {
                     con[0] = new File(parent+File.separator+"010authUsers.nxs");
-                    con[1] = new File(parent+File.separator+"015authRoles.nxs");
-                    con[2] = new File(parent+File.separator+"020customCommands.nxs");
-                    con[3] = new File(parent+File.separator+"030killOnSite.nxs");
-                    con[4] = new File(parent+File.separator+"040quotes.nxs");
-                    con[5] = new File(parent+File.separator+"050miscSettings.nxs");
+                    con[1] = new File(parent+File.separator+"013ignoredUsers.nxs");
+                    con[2] = new File(parent+File.separator+"015authRoles.nxs");
+                    con[3] = new File(parent+File.separator+"020customCommands.nxs");
+                    con[4] = new File(parent+File.separator+"030killOnSite.nxs");
+                    con[5] = new File(parent+File.separator+"040quotes.nxs");
+                    con[6] = new File(parent+File.separator+"050miscSettings.nxs");
                 }
                 PrintWriter[] pon = new PrintWriter[con.length];
                 for(int x=0;x<pon.length;x++){
