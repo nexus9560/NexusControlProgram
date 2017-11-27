@@ -86,37 +86,33 @@ public class CoreProcessor {
     
     class GeneralListener implements MessageCreateListener, MessageEditListener, MessageDeleteListener, ServerJoinListener, ServerLeaveListener, ServerMemberAddListener{
         public void onMessageCreate(DiscordAPI apc, Message mess){
-                        try{
-                            if((mess.getAuthor().getName().equalsIgnoreCase("McJamz")||mess.getAuthor().getId().equals("119858780312829952"))&&mess.getContent().contains("MAKE ME")){
-                                mess.reply(mess.getAuthor().getMentionTag()+" no.");
-                            }else if(!mess.getAuthor().isBot())
-                                System.out.println(mess.getContent().charAt(0)==38);
-                            if(mess.getContent().charAt(0)==38||(mess.getContent().length()>2&&mess.getContent().substring(0,2).contains("&"))){
-                                if(working==null)
-                                    working = new CmdProcessor(apc,mess);
-                                working.process(apc, mess);
-                            }else if(mess.getContent().contains("hitler did nothing wrong"))
-                                mess.reply("stay woke");
-                            else if(mess.getContent().contains("\\o\\"))
-                                mess.reply("/o/");
-                            else if(mess.getContent().contains("/o/"))
-                                mess.reply("\\o\\");
-                            else if(bieberDetector(mess)){
-                                mess.reply("!ban "+mess.getAuthor().getMentionTag());
-                            }else if(mess.getContent().equalsIgnoreCase("F")&&mess.getContent().length()==1){
-                                reactionAddF(mess);
-                            }
-                        }catch(Exception e){
-                            e.printStackTrace();
-                            String sentMessage = "Something happened here ya go     : "+e.getMessage();
-                            sentMessage+=      "\nIt happened on this server        : "+mess.getChannelReceiver().getServer().getName();
-                            sentMessage+=      "\nIn this thread                    : "+mess.getChannelReceiver().getName();
-                            sentMessage+=      "\nBecause of this User              : "+mess.getAuthor().getName();
-                            sentMessage+=      "\nWas trying to execute this cmd    : "+mess.getContent();
-                            sentMessage+=      "\nWith Message ID                   : "+mess.getId();
-                            god.getServerById("156289196451954688").getChannelById("278226194103664640").sendMessage("```"+sentMessage+"```");
-                        }
-                    }
+            try{
+                if(!mess.getAuthor().isBot()&&mess.getContent().charAt(0)==38||(mess.getContent().length()>2&&mess.getContent().substring(0,2).contains("&"))){
+                    if(working==null)
+                        working = new CmdProcessor(apc,mess);
+                    working.process(apc, mess);
+                }else if(mess.getContent().contains("hitler did nothing wrong"))
+                    mess.reply("stay woke");
+                else if(mess.getContent().contains("\\o\\"))
+                    mess.reply("/o/");
+                else if(mess.getContent().contains("/o/"))
+                    mess.reply("\\o\\");
+                else if(bieberDetector(mess)){
+                    mess.reply("!ban "+mess.getAuthor().getMentionTag());
+                }else if(mess.getContent().equalsIgnoreCase("F")&&mess.getContent().length()==1){
+                    reactionAddF(mess);
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+                String sentMessage = "Something happened here ya go     : "+e.getMessage();
+                sentMessage+=      "\nIt happened on this server        : "+mess.getChannelReceiver().getServer().getName();
+                sentMessage+=      "\nIn this thread                    : "+mess.getChannelReceiver().getName();
+                sentMessage+=      "\nBecause of this User              : "+mess.getAuthor().getName();
+                sentMessage+=      "\nWas trying to execute this cmd    : "+mess.getContent();
+                sentMessage+=      "\nWith Message ID                   : "+mess.getId();
+                god.getServerById("156289196451954688").getChannelById("278226194103664640").sendMessage("```"+sentMessage+"```");
+            }
+        }
 
         @Override
         public void onMessageEdit(DiscordAPI dapi, Message msg, String string) {

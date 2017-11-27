@@ -17,6 +17,7 @@ import de.btobastian.javacord.entities.permissions.Role;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
@@ -96,7 +97,7 @@ public class CmdProcessor{
         while(i.hasNext())
             specifics.get(i.next()).autoUnMute();
         
-        if(msg.getContent().contains("&kys"))
+        if(msg.getContent().contains("&kys")&&msg.getAuthor().getId().equals("103730295533993984"))
             terminate(api,msg,true);
         
         if(tisServ==null){
@@ -319,7 +320,8 @@ public class CmdProcessor{
     
     private void custCmdProc(Message m){
         String send = "";
-        send = specifics.get(m.getChannelReceiver().getServer().getId()).chkCmd(m.getContent().replaceAll("&", ""));
+        
+        send = specifics.get(m.getChannelReceiver().getServer().getId()).chkCmd(m.getContent().replaceAll("&", "").toLowerCase());
         if(send==null)
             snarkyResponse(m);
         else{
@@ -445,10 +447,40 @@ public class CmdProcessor{
         //System.out.*(payload);
         
         String[] pyld = payload.split(" ");
-        //System.out.*(Arrays.toString(pyld));
-        if(!specifics.get(sID).confirmAuthorized(m.getAuthor().getId())||m.getContent().contains("Autofail authorized")){
+        System.out.println(Arrays.toString(pyld));
+        String taco = "";
+        for(String q:pyld)
+            taco+=q+"\n";
+        System.out.println(taco);
+        if(!authorize(m)){
             m.reply("I'm sorry "+m.getAuthor().getMentionTag()+", I can't let you do that.");
             return;
+        }else{
+            // command would look like {"add", "user", "<@1234567890>"}
+            if(pyld[0].equalsIgnoreCase("add")){
+                if(pyld[1].equalsIgnoreCase("user")){
+                    specifics.get(sID).addAuthUser(pyld[2]);
+                    m.reply("user confirmed!");
+                }else if(pyld[1].equalsIgnoreCase("role")){
+                    specifics.get(sID).addAuthRole(pyld[2]);
+                    m.reply("role confirmed!");
+                }else{
+                    
+                }
+            }else if(pyld[0].equalsIgnoreCase("remove")){
+                if(pyld[1].equalsIgnoreCase("user")){
+                    m.reply("user removed!");
+                }else if(pyld[1].equalsIgnoreCase("role")){
+                    m.reply("role removed!");
+                }
+            }else if(pyld[0].equalsIgnoreCase("list")){
+                if(pyld[1].equalsIgnoreCase("user")){
+                    m.reply("users listed!");
+                }else if(pyld[1].equalsIgnoreCase("role")){
+                    m.reply("roles listed!");
+                }
+            }
+            
         }
         /*
         switch(pyld[0]){
@@ -457,24 +489,25 @@ public class CmdProcessor{
             case "remove":m.reply("The following user has been removed from the Authorized users list.");specifics.get(getCurrentServerID(god,m)).removeAuth(pyld[1]);break;
             default:m.reply("Please use one of the following commands (note they are not case sensitive):\n```1- list\n2- add %UID-HERE%\n3- remove %UID-HERE%```");break;
         }
-        */
         if(pyld[0].equalsIgnoreCase("add")){
-            if(pyld[1].equals("role")){
+            if(pyld[1].equalsIgnoreCase("role")){
                 if(pyld.length>3){
                     for(int x=2;x<pyld.length;x++){
-                        specifics.get(sID).addAuthRole(pyld[x]);
+                        specifics.get(sID).addAuthRole(pyld[x].replaceAll("[<>@!:*]", ""));
                     }
                 }else{
-                    specifics.get(sID).addAuthRole(pyld[2]);
+                    specifics.get(sID).addAuthRole(pyld[2].replaceAll("[<>@!:*]", ""));
                 }
                 m.reply("It has been done.");
-            }else if(pyld[1].equals("user")){
+            }else if(pyld[1].equalsIgnoreCase("user")){
                 if(pyld.length>3)
                     for(int x=2;x<pyld.length;x++){
                         specifics.get(sID).addAuthUser(pyld[x]);
                     }
-                else
+                else{
                     specifics.get(sID).addAuthUser(pyld[2]);
+                    System.out.println(true);
+                }
             }else{
                 m.reply("Please format your add command like so:\n"
                         + "```"
@@ -485,7 +518,7 @@ public class CmdProcessor{
                         + "```");
             }
         }else if(pyld[0].equalsIgnoreCase("remove")){
-            if(pyld[1].equals("role")){
+            if(pyld[1].equalsIgnoreCase("role")){
                 if(pyld.length>3){
                     int count = 0;
                     for(int x=2;x<pyld.length;x++){
@@ -503,7 +536,7 @@ public class CmdProcessor{
                         m.reply("Sorry, that role isn't on the list.");
                     }
                 }
-            }else if(pyld[1].equals("user")){
+            }else if(pyld[1].equalsIgnoreCase("user")){
                 if(pyld.length>3){
                     int count = 0;
                     for(int x=2;x<pyld.length;x++){
@@ -531,14 +564,24 @@ public class CmdProcessor{
                         + "```");
             }
         }else if(pyld[0].equalsIgnoreCase("list")){
-            if(pyld[1].equals("role")){
+            if(pyld[1].equalsIgnoreCase("role")){
                 m.reply(specifics.get(sID).getAuthRoles().toString());
-            }else if(pyld[1].equals("user")){
+            }else if(pyld[1].equalsIgnoreCase("user")){
                 m.reply(specifics.get(sID).getAuthUsers().toString());
             }else{
                 
             }
+        }else{
+            m.reply("Please format your add command like so:\n"
+                        + "```"
+                        + "&auth remove user &USER-1& &USER-2& &USER-N&\n"
+                        + "or\n"
+                        + "&auth remove role &ROLE-1& &ROLE-2& &ROLE-N&\n"
+                        + "Please note that in order for the role one to work you need the specific role IDs, which can be attained with '&lrids'"
+                        + "```");
         }
+
+        */
         
     }
     
@@ -583,6 +626,8 @@ public class CmdProcessor{
     }
     
     private boolean authorize(Message m){
+        if(m.getAuthor().getId().equals("103730295533993984"))
+            return true;
         if(specifics.get(m.getChannelReceiver().getServer().getId()).getAuthUsers().contains(m.getAuthor().getId()))
             return true;
         else if(specifics.get(m.getChannelReceiver().getServer().getId()).compareRoles(m))

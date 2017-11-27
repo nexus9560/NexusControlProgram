@@ -99,7 +99,7 @@ public class ServerSpecifics {
     
     public void setCustCmds(String[] c){
         for(String s:c)
-            custCmds.put(s.split(",,")[0], s.split(",,")[1]);
+            custCmds.put(s.split(",,")[0].toLowerCase(), s.split(",,")[1]);
     }
     
     public void setKOSList(String[] c){
@@ -152,8 +152,20 @@ public class ServerSpecifics {
         return true;
     }
     
+    public boolean addIgnoredUser(String u){
+        ignoredUsers.add(u.trim());
+        Iterator<String> i = ignoredUsers.iterator();
+        while(i.hasNext()){
+            String t = i.next();
+            //System.out.*(t);
+            if(t.length()!=18)
+                ignoredUsers.remove(t);
+        }
+        return true;
+    }
+    
     public boolean addCustCmd(String c, String r){
-        return custCmds.put(c, r)!=null;
+        return custCmds.put(c.toLowerCase(), r)!=null;
     }
     
     public boolean addKOS(String u, String r){
@@ -186,6 +198,10 @@ public class ServerSpecifics {
     
     public void removeAuth(String s){
         authUsers.remove(s);
+    }
+    
+    public void removeIgnored(String s){
+        ignoredUsers.remove(s);
     }
     
     public void removeAuthRole(String s){
@@ -265,6 +281,8 @@ public class ServerSpecifics {
     public HashMap<String,String> getKOSList(){return kos;}
     
     public ArrayList<String> getQuotes(){return quotes;}
+    
+    public HashSet<String> getIgnoredUsers(){return ignoredUsers;}
     
     public String getSettings(){
         String ret="";
