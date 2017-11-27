@@ -149,6 +149,12 @@ public class CmdProcessor{
             String sID = m.getChannelReceiver().getServer().getId();
             String q = m.getContent().replaceAll("&ignore", "").trim();
             String[] pyld = q.split(" ");
+            for(String io: pyld){
+                if(io.contains(myID)){
+                    m.reply("Not happening.");
+                    return;
+                }
+            }
             //{"add", "&USER-ID&"}
             //{"add", "&USER-ID&", "&USER-UD&"}
             if(pyld[0].equalsIgnoreCase("add")){
@@ -174,6 +180,19 @@ public class CmdProcessor{
             }
         }else{
             m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't do that.");
+        }
+    }
+    
+    public void sendBotLogMessage(Message m,String q){
+        String sID = m.getChannelReceiver().getServer().getId();
+        Channel blc = god.getServerById(sID).getChannelById(specifics.get(sID).getBotLog());
+        if(blc!=null&&q!=null){
+            String iq = m.getChannelReceiver().getName();
+            blc.sendMessage("Original message in \""+iq+"\":\n```"+q+"```");
+            blc.sendMessage("Edited message:\n```"+m.getContent()+"```");
+        }else if(blc!=null){
+            blc.sendMessage("Deleted message:\n```"+m.getContent()+"```");
+            blc.sendMessage("In \""+m.getChannelReceiver().getName()+"\"");
         }
     }
     
