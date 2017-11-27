@@ -87,31 +87,36 @@ public class CmdProcessor{
     }
     
     /*
-        $$kos add Test-Pilot : For testing things
+        The "main" method of the command processor, pass in the api, the message, and watch the world burn.
     */
     
     public final void process(DiscordAPI api, Message msg){
         
         ////System.out.*(god.toString());
         
-        
+        //Temporary fix for muting people, as I haven't quite figured out how to have timers and such....
         Iterator<String> i = specifics.keySet().iterator();
         while(i.hasNext())
             specifics.get(i.next()).autoUnMute();
         
-        String sID = msg.getChannelReceiver().getServer().getId();
         
+        //Checks to see if the user is ignored, if the ignored user tries to execute a command, it responds as such. (May be changed to not respond not sure)
+        String sID = msg.getChannelReceiver().getServer().getId();
         if(specifics.get(sID).isIgnored(msg.getAuthor().getId())){
             msg.reply("I'm sorry, "+msg.getAuthor().getMentionTag()+", I've been told not to listen to you.");
             return;
         }
         
+        
+        //I'm the only one who can tell the bot to kill itself, since I haven't quite got it to auto start and auto terminate, this is what I use to terminate the bot
         if(msg.getContent().contains("&kys")&&msg.getAuthor().getId().equals("103730295533993984"))
             terminate(api,msg,true);
-        
+        //This is more or less going to be depreciated at some point...
         if(tisServ==null){
             tisServ = specifics.get(api.getServerById(this.getCurrentServerID(api, msg)).getId());
         }
+        
+        //This is where the fun begins, a hardwired switch, but for anything that requires heavy lifting, I'd prefer to have it hardwired.
         String cmd = msg.getContent();
         if(cmd.contains(" "))
             cmd = cmd.substring(0, msg.getContent().indexOf(" "));
@@ -127,22 +132,25 @@ public class CmdProcessor{
             case "ignore"       :ignoreProcessor(msg);break;
             case "kos"          :kosProcessor(msg);break;
             case "lmds"         :
-            case "listMsgDtls"  :listMessageDetails(api, msg);break;
+            case "listmsgdtls"  :listMessageDetails(api, msg);break;
             case "lrids"        :
-            case "listRoleIDs"  :listRoleDetails(msg);break;
+            case "listroleids"  :listRoleDetails(msg);break;
             case "mute"         :muteAction(msg);break;
             case "quote"        :quoteProcessor(msg);break;
             case "reload"       :expLoadData(api);msg.reply("Reloading saved data...");break;
             case "roll"         :msg.reply(DiceRoll.roll(msg));break;
             case "save"         :expSaveData(api);msg.reply("Saving data to file...");break;
             case "sudo"         :sudoActions(api, msg);break;
-            case "sysTime"      :msg.reply(System.currentTimeMillis()+"");break;
+            case "systime"      :msg.reply(System.currentTimeMillis()+"");break;
             case "unmute"       :unmuteAction(msg);break;
             case "help"         :helpAction(msg);break;
             default             :custCmdProc(msg);
         }
         
     }
+    
+    //Processes ignore commands, hardwired to never ignore me under any circumstances
+    //Users marked as "ignored" are ignored regardless of their approved statuses
     
     public void ignoreProcessor(Message m){
         if(authorize(m)){
@@ -183,6 +191,8 @@ public class CmdProcessor{
         }
     }
     
+    //Sends a log message in the designated bot log channel
+    
     public void sendBotLogMessage(Message m,String q){
         String sID = m.getChannelReceiver().getServer().getId();
         Channel blc = god.getServerById(sID).getChannelById(specifics.get(sID).getBotLog());
@@ -196,15 +206,19 @@ public class CmdProcessor{
         }
     }
     
+    //Sends a welcome message to a user on join to the server if welcome settings have been established
+    
     public void sendServerWelcomeMessage(Server s, User u){
         if(specifics.get(s.getId()).getWelcoming()){
             Channel c = s.getChannelById(specifics.get(s.getId()).getWelcChanID());
             String send = specifics.get(s.getId()).getWelcomeMessage().replaceAll("&USER&",u.getMentionTag());
             if(specifics.get(s.getId()).getGuessPassId()!=null)
-                send+="\nThis server has a guest pass! Please type &guestPass to get it.";
+                send+="\nThis server has a guest pass!\nPlease type &guestPass to get it.";
             c.sendMessage(send);
         }
     }
+    
+    //Unmutes a user, but only if the person unmuting is authorized
     
     private void unmuteAction(Message m){
         if(authorize(m)){
@@ -223,6 +237,8 @@ public class CmdProcessor{
         }
     }
     
+    //Mutes a user, but only if the person muting is authorized, muting also only works if there is a designated role
+    
     private void muteAction(Message m){
         //&mute %USER-ID
         if(authorize(m)){
@@ -236,12 +252,15 @@ public class CmdProcessor{
                 mute.addUser(s.getMemberById(c[x]));
                 specifics.get(i).mutePerson(c[x]);
             }
-            for(int x=1;x<c.length;x++)
-                s.getChannelById(specifics.get(i).getMuteChannelId()).sendMessage("Welcome to Purge-atory "+s.getMemberById(c[x]).getMentionTag()+", please enjoy your stay.");
+            if(specifics.get(i).getMuteChannelId()!=null)
+                for(int x=1;x<c.length;x++)
+                    s.getChannelById(specifics.get(i).getMuteChannelId()).sendMessage("Welcome to Purge-atory "+s.getMemberById(c[x]).getMentionTag()+", please enjoy your stay.");
         }else{
             m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
     }
+    
+    //Assigns a user a "guest pass", provided the user has no role, and the server has a guest pass
     
     private void guestPass(Message m){
         Server tws = m.getChannelReceiver().getServer();
@@ -251,9 +270,14 @@ public class CmdProcessor{
             m.getAuthor().sendMessage("You now have a guest pass for "+tws.getName());
             m.delete();
         }else{
-            m.reply("I'm sorry, but this server does not have a guest pass, my condolences...");
+            if(specifics.get(tws.getId()).getGuessPassId()==null)
+                m.reply("I'm sorry, but this server does not have a guest pass, my condolences...");
+            else if(!m.getAuthor().getRoles(tws).isEmpty())
+                m.reply("Hey! You already have roles!");
         }
     }
+    
+    //Adjusting server settings
     
     private void sudoActions(DiscordAPI a, Message m){
         if(authorize(m)){
@@ -266,16 +290,33 @@ public class CmdProcessor{
             //["set", "guestID", "%GUEST-ID%"]
             //System.out.*(Arrays.toString(cmP));
             if(cmP[0].equalsIgnoreCase("set")){
-                switch(cmP[1]){
-                    case "guestID"          :specifics.get(sID).setGuestRoleId(cmP[2]);break;
-                    case "muteID"           :specifics.get(sID).setMuteRoleId(cmP[2]);break;
-                    case "muteChannel"      :specifics.get(sID).setMuteChannel(cmP[2]);break;
-                    case "welcome"          :specifics.get(sID).setWelcoming(Boolean.parseBoolean(cmP[2]));break;
-                    case "welcomeMessage"   :specifics.get(sID).setWelcomeMessage(cmP);break;
-                    case "welcomeChannel"   :specifics.get(sID).setWelcChanID(cmP[2]);break;
-                    case "botLog"           :specifics.get(sID).setBotLog(cmP[2]);break;
-                    case "limited"          :specifics.get(sID).setLimitedStatus(Boolean.parseBoolean(cmP[2]));break;
-                    default:m.reply("I'm sorry, I don't understand...");return;
+                try{
+                    switch(cmP[1]){
+                        case "guestID"          :specifics.get(sID).setGuestRoleId(cmP[2]);break;
+                        case "muteID"           :specifics.get(sID).setMuteRoleId(cmP[2]);break;
+                        case "muteChannel"      :specifics.get(sID).setMuteChannel(cmP[2]);break;
+                        case "welcome"          :specifics.get(sID).setWelcoming(Boolean.parseBoolean(cmP[2]));break;
+                        case "welcomeMessage"   :specifics.get(sID).setWelcomeMessage(cmP);break;
+                        case "welcomeChannel"   :specifics.get(sID).setWelcChanID(cmP[2]);break;
+                        case "botLog"           :specifics.get(sID).setBotLog(cmP[2]);break;
+                        case "limited"          :specifics.get(sID).setLimitedStatus(Boolean.parseBoolean(cmP[2]));break;
+                        default                 :
+                            String reply = "";
+                            reply+="The following are the settings you can change:\n```";
+                            reply+="guestID         -> Appropriate role for guests\n";
+                            reply+="muteID          -> role ID for muting people\n";
+                            reply+="muteChannel     -> channel for disposing of muted people\n";
+                            reply+="welcome         -> the toggle for sending a welcome message true/false\n";
+                            reply+="welcomeMessage  -> The welcome message for welcoming new users, only sends if welcome is set to true\n";
+                            reply+="welcomeChannel  -> The channel that welcome message is sent in\n";
+                            reply+="botLog          -> The channel for dumping logging actions\n";
+                            reply+="limited         -> Determines if the bot has limited diagnostics output, set to true by default\n";
+                            reply+="```";
+                            m.reply(reply);
+                            return;
+                    }
+                }catch(Exception e){
+                    
                 }
             }else if(cmP[0].equalsIgnoreCase("get")){
                 switch(cmP[1]){
@@ -288,7 +329,20 @@ public class CmdProcessor{
                     case "welcomeMessage"   :m.reply("The Welcome Message is: "+specifics.get(sID).getWelcomeMessage());break;
                     case "welcomeChannel"   :m.reply("The Welcome channel is: "+specifics.get(sID).getWelcChanID());break;
                     case "limited"          :m.reply("The limited status of this server is: "+(specifics.get(sID).getLimitedStatus()?"Limited":"Not Limited"));break;
-                    default                 :m.reply("I'm sorry, I can't find what you're looking for...");return;
+                    default                 :
+                            String reply = "";
+                            reply+="The following are the settings you can change:\n```";
+                            reply+="guestID         -> Appropriate role for guests\n";
+                            reply+="muteID          -> role ID for muting people\n";
+                            reply+="muteChannel     -> channel for disposing of muted people\n";
+                            reply+="welcome         -> the toggle for sending a welcome message true/false\n";
+                            reply+="welcomeMessage  -> The welcome message for welcoming new users, only sends if welcome is set to true\n";
+                            reply+="welcomeChannel  -> The channel that welcome message is sent in\n";
+                            reply+="botLog          -> The channel for dumping logging actions\n";
+                            reply+="limited         -> Determines if the bot has limited diagnostics output, set to true by default\n";
+                            reply+="```";
+                            m.reply(reply);
+                            return;
                 }
             }
             if(cmP[0].equalsIgnoreCase("set"))
@@ -297,6 +351,8 @@ public class CmdProcessor{
             m.reply("I'm sorry, "+m.getAuthor().getMentionTag()+", I can't let you do that.");
         }
     }
+    
+    //DMs message details, namely information on the content
     
     private void listMessageDetails(DiscordAPI apo, Message m){
         String sent = "";
@@ -310,15 +366,18 @@ public class CmdProcessor{
         m.getAuthor().sendMessage("```"+sent+"```");
     }
     
+    //Lists the IDs for roles. In the future I'll have it more on a role by role basis, but for right now, I'd rather pull the roles in batch
+    
     private void listRoleDetails(Message m){
         String sent = "";
         ArrayList<Role> roles = new ArrayList<>(god.getServerById(this.getCurrentServerID(god, m)).getRoles());
         for(Role r:roles){
             sent+=r.toString()+"\n";
         }
-        if(sent.length()<2000)
-            m.reply("```"+sent+"```");
+        if(true||sent.length()<2000)
+            m.getAuthor().sendMessage("```"+sent+"```");
         else{
+        /*
             String[] ti = sent.split("\n");
             ArrayList<String> reto = new ArrayList<>();
             int lo = 0;
@@ -327,8 +386,11 @@ public class CmdProcessor{
             while(reto.get(lo).length()<1950){
                 
             }
+        */
         }
     }
+    
+    //Would read the attached help file, however I don't have that copied over to the server computer
     
     private void helpAction(Message m){
         try{
@@ -344,7 +406,8 @@ public class CmdProcessor{
     
     //Moved to DiceRoll.java
     
-    //&cmd add,, lookAtThem,, yadda yadda
+    //Makes custom commands, will eventually allow for embeds, but I am still yet to figure those out...
+    
     private void custCommands(Message m){
         //&cmd add,, lookAtThem,, yadda yadda
         String payload = m.getContent().replaceAll("&cmd","").trim();
@@ -380,6 +443,8 @@ public class CmdProcessor{
         }
     }
     
+    //Responds to the custom commands, again, will have embeds at some point
+    
     private void custCmdProc(Message m){
         String send = "";
         
@@ -396,11 +461,15 @@ public class CmdProcessor{
         }
     }
     
+    //subservient to the custom commands
+    
     private String parseOutURLs(String s){
         String ret = "";
         
         return ret;
     }
+    
+    //part 2 electric boogaloo
     
     private String[] parseURLs(String s){
         String[] tomato = s.split("\\s");
@@ -411,6 +480,8 @@ public class CmdProcessor{
         return ret;
     }
     
+    //slave to quote processor to make sure someone doesn't make a bad quote request
+    
     private int greaterThanZero(String s){
         int ret = new Integer(s)-1;
         if(ret<0)
@@ -419,7 +490,8 @@ public class CmdProcessor{
             return ret;
     }
     
-    //&quote add,, TIMES UP COMMANDUH -- Alan Reed
+    //Manages quotes, can add, remove, get Nth quote, and get most recent quote
+    
     private void quoteProcessor(Message m){
         String payload = m.getContent().replaceAll("&quote","").trim();
         //&quote add,, TIMES UP COMMANDUH -- Alan Reed
@@ -438,6 +510,8 @@ public class CmdProcessor{
         else
             m.reply(send);
     }
+    
+    //Provides diagnostic output on the status of the bot, makes sure the data manager has been instantiated, and lists the various settings for the bot
     
     private void diagnostics(Message m){
         String ret="";
@@ -499,9 +573,13 @@ public class CmdProcessor{
         }
     }
     
+    //slave to Diagnostics, checks to see if the limited status has been overriden
+    
     private boolean limitedOverride(Message m){
         return m.getContent().contains("override")||m.getContent().contains("ovr")||!specifics.get(this.getCurrentServerID(god, m)).getLimitedStatus();
     }
+    
+    //Manages the Authorization and Deauthorization of users and roles, can do multiple at a time.
     
     private void authorizeProcessor(Message m){
         String payload = m.getContent().replaceAll("&authorize","").replaceAll("&auth","").trim();
@@ -676,7 +754,7 @@ public class CmdProcessor{
         
     }
     
-    //&kos add, Test-Pilot, Lol he's a test pilot
+    //A work in progress "Kill On Sight" system, keep track of those pesky players who play the game in ways you don't like.
     
     private void kosProcessor(Message m){
         String payload = m.getContent();
@@ -689,6 +767,8 @@ public class CmdProcessor{
             case "remove":specifics.get(thisServer.getId()).removeKOS(pyld[1]);m.reply("Pilot has been removed...");break;
         }
     }
+    
+    //User for insulting the user should they make a bad command, gradually getting phased out with actual formatting responses
     
     private void snarkyResponse(Message m){
         User u = m.getAuthor();
@@ -704,9 +784,13 @@ public class CmdProcessor{
         }
     }
     
+    //Grabs the server ID based on a message
+    
     private String getCurrentServerID(DiscordAPI api, Message m){
         return m.getChannelReceiver().getServer().getId();
     }
+    
+    //Says 'hi' in the designated channel... needs a rework
     
     private void sendMessage(DiscordAPI api, Message m,int l){
         for(Channel c:api.getChannels())
@@ -715,6 +799,8 @@ public class CmdProcessor{
                 return;
             }
     }
+    
+    //determines if a user is either directly authorized or has a role that permits use of higher level commands
     
     private boolean authorize(Message m){
         if(m.getAuthor().getId().equals("103730295533993984"))
@@ -725,6 +811,8 @@ public class CmdProcessor{
             return true;
         return false;
     }
+    
+    //Shutdown protocol for the bot, if the shutdown is not forced it'll respond with the message then shut off, otherwise it'll object
     
     private void terminate(DiscordAPI api, Message msg,boolean force){
         if(authorize(msg)||msg.getAuthor().getId().equals(myID)){
@@ -739,6 +827,8 @@ public class CmdProcessor{
             msg.reply("YOU\'RE NOT MY REAL DAD "+msg.getAuthor().getMentionTag()+"!");
         }
     }
+    
+    //How I load the data from files, for each server there is a folder, in each folder there are (7) files, each file saves a certain thing
     
     private boolean expLoadData(DiscordAPI api){
         try{
@@ -808,6 +898,8 @@ public class CmdProcessor{
         }catch(Exception e){return false;}
         return true;
     }
+    
+    //How I save the data, again, for each server there is a folder, and for each folder there are a handful of files for the various variables
     
     public final boolean expSaveData(DiscordAPI api){
         
