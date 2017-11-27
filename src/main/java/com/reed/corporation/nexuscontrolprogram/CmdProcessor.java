@@ -14,6 +14,7 @@ import de.btobastian.javacord.entities.message.MessageAttachment;
 import de.btobastian.javacord.entities.message.embed.Embed;
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder;
 import de.btobastian.javacord.entities.permissions.Role;
+import java.awt.Color;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -91,7 +92,8 @@ public class CmdProcessor{
     */
     
     public final void process(DiscordAPI api, Message msg){
-        
+        if(msg.getAuthor().isBot())
+            return;
         ////System.out.*(god.toString());
         
         //Temporary fix for muting people, as I haven't quite figured out how to have timers and such....
@@ -193,12 +195,22 @@ public class CmdProcessor{
         }
     }
     
+    public EmbedBuilder buildEmbed(Message m){
+        EmbedBuilder ret = new EmbedBuilder();
+        User author = m.getAuthor();
+        String content = m.getContent();
+        String[] splitter = content.split(" ");
+        return ret;
+    }
+    
     //Sends a log message in the designated bot log channel
     
     public void sendBotLogMessage(Message m,String q){
         String sID = m.getChannelReceiver().getServer().getId();
         Channel blc = god.getServerById(sID).getChannelById(specifics.get(sID).getBotLog());
-        if(blc!=null&&q!=null){
+        if(m.getChannelReceiver().equals(blc))
+            return;
+        else if(blc!=null&&q!=null){
             String iq = m.getChannelReceiver().getName();
             blc.sendMessage("Original message in \""+iq+"\":\n```"+q+"```");
             blc.sendMessage("Edited message:\n```"+m.getContent()+"```");
@@ -451,37 +463,36 @@ public class CmdProcessor{
         String send = "";
         
         send = specifics.get(m.getChannelReceiver().getServer().getId()).chkCmd(m.getContent().replaceAll("&", "").toLowerCase());
-        if(send==null)
-            snarkyResponse(m);
-        else{
+        if(send!=null)
             if(send.contains("http://")||send.contains("https://")){
+                String[] builds = send.split(" ");
+                String url = "";
+                for(String q:builds)
+                    if(q.contains("http://")||q.contains("https://")){
+                        url=q;
+                        break;
+                    }
+                String notURL="";
+                for(String i:builds){
+                    if(!i.contains("http://")&&!i.contains("https://"))
+                        notURL+=i+" ";
+                    else
+                        notURL+="&LINKED-IMAGE& ";
+                }
                 EmbedBuilder b = new EmbedBuilder();
-                String[] urls = parseURLs(send);
-                String noURLs = parseOutURLs(send);
+                b.setColor(Color.BLUE);
+                b.setTitle(url);
+                b.setUrl(url);
+                b.setAuthor(m.getAuthor().getNickname(m.getChannelReceiver().getServer()));
+                b.setThumbnail("https://i.imgur.com/7Oa4zTq.png");
+                b.setImage(url);
+                m.getChannelReceiver().sendMessage(notURL+"", b);
             }else
                 m.reply(send.replaceAll("&USER&",m.getAuthor().getMentionTag()));
+        else{
+            snarkyResponse(m);
         }
     }
-    
-    //subservient to the custom commands
-    
-    private String parseOutURLs(String s){
-        String ret = "";
-        
-        return ret;
-    }
-    
-    //part 2 electric boogaloo
-    
-    private String[] parseURLs(String s){
-        String[] tomato = s.split("\\s");
-        for(int x=0;x<tomato.length;x++)
-            tomato[x]=tomato[x].replaceAll(",","");
-        String[] ret = null;
-        
-        return ret;
-    }
-    
     //slave to quote processor to make sure someone doesn't make a bad quote request
     
     private int greaterThanZero(String s){
