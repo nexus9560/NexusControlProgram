@@ -116,14 +116,14 @@ public class CoreProcessor {
 
         @Override
         public void onMessageEdit(DiscordAPI dapi, Message msg, String string) {
-            if(working!=null){
+            if(working!=null&&!msg.getAuthor().isBot()){
                 working.sendBotLogMessage(msg, string);
             }
         }
 
         @Override
         public void onMessageDelete(DiscordAPI dapi, Message msg) {
-            if(working!=null){
+            if(working!=null&&!msg.getAuthor().isBot()){
                 working.sendBotLogMessage(msg, null);
             }
         }

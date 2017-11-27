@@ -106,7 +106,9 @@ public class CmdProcessor{
             msg.reply("I'm sorry, "+msg.getAuthor().getMentionTag()+", I've been told not to listen to you.");
             return;
         }
-        
+        //checks to see if user is muted (If applicable)
+        if(specifics.get(sID).getMuteRoleId()!=null&&msg.getAuthor().getRoles(msg.getChannelReceiver().getServer()).contains(msg.getChannelReceiver().getServer().getRoleById(specifics.get(sID).getMuteRoleId())))
+            return;
         
         //I'm the only one who can tell the bot to kill itself, since I haven't quite got it to auto start and auto terminate, this is what I use to terminate the bot
         if(msg.getContent().contains("&kys")&&msg.getAuthor().getId().equals("103730295533993984"))
