@@ -415,7 +415,7 @@ public class CmdProcessor{
             m.getAuthor().sendMessage(message);
             message = "";
             scans.close();
-        }catch(Exception e){System.out.println("Lol you forgot to make the helpfile again moron.");}
+        }catch(Exception e){CoreProcessor.readout.append("\nLol you forgot to make the helpfile again moron.");}
     }
     
     //Moved to DiceRoll.java
@@ -477,21 +477,60 @@ public class CmdProcessor{
                     if(!i.contains("http://")&&!i.contains("https://"))
                         notURL+=i+" ";
                     else
-                        notURL+="&LINKED-IMAGE& ";
+                        notURL+=" ";
                 }
-                EmbedBuilder b = new EmbedBuilder();
-                b.setColor(Color.BLUE);
-                b.setTitle(url);
-                b.setUrl(url);
-                b.setAuthor(m.getAuthor().getNickname(m.getChannelReceiver().getServer()));
-                b.setThumbnail("https://i.imgur.com/7Oa4zTq.png");
-                b.setImage(url);
+                EmbedBuilder b = buildable(url);
+                //b.setThumbnail("https://i.imgur.com/7Oa4zTq.png");
                 m.getChannelReceiver().sendMessage(notURL+"", b);
             }else
                 m.reply(send.replaceAll("&USER&",m.getAuthor().getMentionTag()));
         else{
             snarkyResponse(m);
         }
+    }
+    
+    private EmbedBuilder buildable(String uri){
+        EmbedBuilder ret = new EmbedBuilder();
+        String[][] work = PageScraper.scrapeContent(uri);
+        if(uri.contains("knowyourmeme")){
+            /*CoreProcessor.readout.append("\n\n\n\n\n\nBuilding!\n\n\n\n");
+            for(String[] q:work){
+                for(String i:q)
+                    System.out.print(i+" || ");
+                CoreProcessor.readout.append();
+            }
+            */
+            String title = work[0][2].substring(work[0][2].indexOf("`")+1,work[0][2].lastIndexOf("`")).replaceAll("&amp;", "&");
+            //CoreProcessor.readout.append("Title:\t"+title+"\n");
+            String src = work[5][2].substring(work[5][2].indexOf("`")+1,work[5][2].lastIndexOf("`"));
+            //CoreProcessor.readout.append("Source:\t"+src+"\n");
+            String url = work[6][1].substring(work[6][1].indexOf("`")+1,work[6][1].lastIndexOf("`"));
+            //CoreProcessor.readout.append("URL:\t"+url+"\n");
+            ret.setTitle(title);
+            ret.setUrl(src);
+            ret.setImage(url);
+            ret.setColor(Color.blue);
+            ret.setFooter("Found on Know Your Meme", "http://a.kym-cdn.com/assets/kym-10ad2b8dcec00928efbdba0cdc12c66f.jpg");
+        }else if(uri.contains("imgur")){
+            ret.setColor(Color.green);
+            String iSrc="";
+            try{
+                iSrc = "http:"+work[3][3].substring(work[3][3].indexOf("`")+1,work[3][3].lastIndexOf("`"));
+            }catch(ArrayIndexOutOfBoundsException aioobe){
+                iSrc = ""+work[2][2].substring(work[2][2].indexOf("`")+1,work[2][2].lastIndexOf("`"));
+            }
+            CoreProcessor.readout.append("\n"+iSrc + "\n\n\n\n\n\n");
+            String iTitle = ""+work[1][2].substring(work[1][2].indexOf("`")+1,work[1][2].lastIndexOf("`")).replaceAll("&amp;", "&");
+            String iDescription = ""+work[0][2].substring(work[0][2].indexOf("`")+1,work[0][2].lastIndexOf("`")).replaceAll("&amp;", "&");
+            ret.setDescription(iDescription);
+            ret.setTitle(iTitle);
+            ret.setUrl(iSrc);
+            ret.setImage(iSrc);
+            ret.setFooter("Found on Imgur","");
+        }else{
+            
+        }
+        return ret;
     }
     //slave to quote processor to make sure someone doesn't make a bad quote request
     
@@ -566,7 +605,7 @@ public class CmdProcessor{
 //                    for(String s:rot){
 //                        //try{god.wait(0,100);}catch(Exception e){}
 //                        //try{Thread.sleep(0,3000);}catch(Exception e){}
-//                        //System.out.println("\n\n"+s+"\n\n");
+//                        //CoreProcessor.readout.append("\n\n"+s+"\n\n");
 //                        working.getChannelById(chId).sendMessage("```"+s+"```");
 //                    }
 //                }else{
@@ -600,7 +639,7 @@ public class CmdProcessor{
         //System.out.*(payload);
         
         String[] pyld = payload.split(" ");
-        System.out.println(Arrays.toString(pyld));
+        CoreProcessor.readout.append("\n"+Arrays.toString(pyld));
         String taco = "";
         if(pyld.length>=2)
             for(int x=2;x<pyld.length;x++)
@@ -608,7 +647,7 @@ public class CmdProcessor{
         
         for(String q:pyld)
             taco+=q+"\n";
-        System.out.println(taco);
+        CoreProcessor.readout.append("\n"+taco);
         if(!authorize(m)){
             m.reply("I'm sorry "+m.getAuthor().getMentionTag()+", I can't let you do that.");
             return;
@@ -688,7 +727,7 @@ public class CmdProcessor{
                     }
                 else{
                     specifics.get(sID).addAuthUser(pyld[2]);
-                    System.out.println(true);
+                    CoreProcessor.readout.append(true);
                 }
             }else{
                 m.reply("Please format your add command like so:\n"
@@ -849,15 +888,15 @@ public class CmdProcessor{
             //System.out.*("\n\n\n\n\n");
             
             for(Server s:wSL){
-                System.out.println(s.toString());
+                CoreProcessor.readout.append("\n"+s.toString());
                 ServerSpecifics temp = new ServerSpecifics();
-                System.out.println("Server Specs initialiazed...");
+                CoreProcessor.readout.append("\n"+"Server Specs initialiazed...");
                 String parent = "S"+s.getId();
-                System.out.println("Parent directories identified...");
+                CoreProcessor.readout.append("\n"+"Parent directories identified...");
                 File pDir = new File(parent);
                 if(!pDir.exists())
                     pDir.mkdir();
-                System.out.println("Establishing that parent directory exists...");
+                CoreProcessor.readout.append("\n"+"Establishing that parent directory exists...");
                 File[] con = new File[7];
                 {
                     con[0] = new File(parent+File.separator+"010authUsers.nxs");
@@ -870,9 +909,9 @@ public class CmdProcessor{
                     for(File f:con)
                         if(!f.exists()){
                             f.createNewFile();
-                            System.out.println("File not found... rectifying...");
+                            CoreProcessor.readout.append("\nFile not found... rectifying...");
                         }else{
-                            System.out.println("File found...");
+                            CoreProcessor.readout.append("\nFile found...");
                         }
                 }
                 
@@ -880,27 +919,27 @@ public class CmdProcessor{
                 String tempo = "";
                 
                 for(int x=0;x<con.length;x++){
-                    System.out.println("Reading file "+(x+1)+" of "+con.length);
-                    System.out.println("File header reads: "+con[x].toString());
+                    CoreProcessor.readout.append("\nReading file "+(x+1)+" of "+con.length);
+                    CoreProcessor.readout.append("\nFile header reads: "+con[x].toString());
                     taco = new Scanner(con[x]);
                     tempo="";
-                    System.out.println("File scanner has been initialized...");
+                    CoreProcessor.readout.append("\nFile scanner has been initialized...");
                     while(taco.hasNextLine())
                         tempo+=taco.nextLine()+"\n";
-                    System.out.println("Tempo string has been populated, contents: "+tempo.replaceAll("\n",", "));
+                    CoreProcessor.readout.append("\nTempo string has been populated, contents: "+tempo.replaceAll("\n",", "));
                     String[] c = tempo.split("\n");
-                    System.out.println("Tempo string has been split along new lines, contents: "+Arrays.toString(c));
+                    CoreProcessor.readout.append("\nTempo string has been split along new lines, contents: "+Arrays.toString(c));
                     if(tempo.length()<1){
-                        System.out.println("Nothing within tempo...");
+                        CoreProcessor.readout.append("\nNothing within tempo...");
                     }else{
                         switch(x){
-                            case 0:temp.setAuthUsers(c);System.out.println("Auth Users set...");break;
-                            case 1:temp.setIgnoredUsers(c);System.out.println("Ignored Users set...");break;
-                            case 2:temp.setAuthRoles(c);System.out.println("Auth Roles set...");break;
-                            case 3:temp.setCustCmds(c);System.out.println("Custom Commands set...");break;
-                            case 4:temp.setKOSList(c);System.out.println("KOS listings set...");break;
-                            case 5:temp.setQuotes(c);System.out.println("Quotes memorized...");break;
-                            case 6:temp.setSettings(c);System.out.println("Misc settings adjusted...");break;
+                            case 0:temp.setAuthUsers(c);CoreProcessor.readout.append("\nAuth Users set...");break;
+                            case 1:temp.setIgnoredUsers(c);CoreProcessor.readout.append("\nIgnored Users set...");break;
+                            case 2:temp.setAuthRoles(c);CoreProcessor.readout.append("\nAuth Roles set...");break;
+                            case 3:temp.setCustCmds(c);CoreProcessor.readout.append("\nCustom Commands set...");break;
+                            case 4:temp.setKOSList(c);CoreProcessor.readout.append("\nKOS listings set...");break;
+                            case 5:temp.setQuotes(c);CoreProcessor.readout.append("\nQuotes memorized...");break;
+                            case 6:temp.setSettings(c);CoreProcessor.readout.append("\nMisc settings adjusted...");break;
                         }
                     }
                 }
