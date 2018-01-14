@@ -94,6 +94,7 @@ public class CoreProcessor {
     public final static void updateBox(String s){
         String message = "> "+s+"\n";
         readout.append(message);
+        readout.setCaretPosition(readout.getText().length());
     }
     
     private void launchGUIBackend(){
@@ -281,6 +282,7 @@ public class CoreProcessor {
                 String serId = sIDs.get((String)ser.getSelectedItem());
                 String chanId = cIDs.get((String)cha.getSelectedItem());
                 god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                updateBox(sent);
                 cmdLine.setText("");
             }
         }
@@ -295,6 +297,7 @@ public class CoreProcessor {
                 String serId = sIDs.get((String)ser.getSelectedItem());
                 String chanId = cIDs.get((String)cha.getSelectedItem());
                 god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                updateBox(sent);
                 cmdLine.setText("");
             }
         }
@@ -306,6 +309,7 @@ public class CoreProcessor {
                 String serId = sIDs.get((String)ser.getSelectedItem());
                 String chanId = cIDs.get((String)cha.getSelectedItem());
                 god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                updateBox(sent);
                 cmdLine.setText("");
             }
         }
@@ -317,6 +321,7 @@ public class CoreProcessor {
                 String serId = sIDs.get((String)ser.getSelectedItem());
                 String chanId = cIDs.get((String)cha.getSelectedItem());
                 god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                updateBox(sent);
                 cmdLine.setText("");
             }
         }
