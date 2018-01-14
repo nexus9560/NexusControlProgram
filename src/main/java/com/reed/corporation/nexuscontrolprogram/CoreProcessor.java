@@ -5,6 +5,7 @@ package com.reed.corporation.nexuscontrolprogram;
 import com.google.common.util.concurrent.FutureCallback;
 import de.btobastian.javacord.DiscordAPI;
 import de.btobastian.javacord.Javacord;
+import de.btobastian.javacord.entities.Channel;
 import de.btobastian.javacord.entities.Server;
 import de.btobastian.javacord.entities.User;
 import de.btobastian.javacord.entities.message.Message;
@@ -14,12 +15,13 @@ import de.btobastian.javacord.listener.message.MessageEditListener;
 import de.btobastian.javacord.listener.server.ServerJoinListener;
 import de.btobastian.javacord.listener.server.ServerLeaveListener;
 import de.btobastian.javacord.listener.server.ServerMemberAddListener;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.HashMap;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -42,7 +44,17 @@ public class CoreProcessor {
     
     private GeneralListener mo = new GeneralListener();
     
-    public static JTextArea readout = new JTextArea();
+    private static JTextArea readout;
+    
+    private static JComboBox ser;
+    
+    private static HashMap<String,String> sIDs = new HashMap<>();
+    
+    private static JComboBox cha;
+    
+    private static HashMap<String,String> cIDs = new HashMap<>();
+    
+    private static JTextField cmdLine;
     
     private static String tkn = null;
     
@@ -62,6 +74,10 @@ public class CoreProcessor {
             public void onSuccess(DiscordAPI apo){
                 apo.registerListener(mo);
                 working = new CmdProcessor(apo);
+                for(Server s:god.getServers()){
+                    ser.addItem(s.getName());
+                    sIDs.put(s.getName(), s.getId());
+                }
             }
             public void onFailure(Throwable t){
                 ProcessorCaller.main(null);
@@ -75,6 +91,11 @@ public class CoreProcessor {
         m.addUnicodeReaction("🇫");
     }
     
+    public final static void updateBox(String s){
+        String message = "> "+s+"\n";
+        readout.append(message);
+    }
+    
     private void launchGUIBackend(){
         
         try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}catch (Exception e){}
@@ -86,11 +107,23 @@ public class CoreProcessor {
         backend.setLocationRelativeTo(null);
         backend.setTitle("Nexus Control Program");
         
-        JButton sAQ = new JButton("Save");
+        
+        JButton sAQ = new JButton("Save and Exit");
         sAQ.setSize(sAQ.getPreferredSize());
         sAQ.setLocation(backend.getWidth()-sAQ.getWidth()-20,10);
         sAQ.setToolTipText("Saves and exits program, most noteably useful on internet disconnect.");
         sAQ.addActionListener(new SaveAndQuitListener());
+        
+        ser = new JComboBox();
+        ser.setSize((backend.getWidth()-140)/2,sAQ.getHeight());
+        ser.setLocation(10,backend.getHeight()-75);
+        ser.addActionListener(new ServerSelector());
+        ser.setToolTipText("Server Selector");
+        
+        cha = new JComboBox();
+        cha.setSize(ser.getSize());
+        cha.setLocation(ser.getX()+ser.getWidth()+10,ser.getY());
+        cha.setToolTipText("Channel Selector");
         
         JButton recon = new JButton("Reconnect");
         recon.setSize(recon.getPreferredSize());
@@ -102,22 +135,31 @@ public class CoreProcessor {
         panel.setSize(panel.getPreferredSize());
         panel.setLayout(null);
         
+        readout = new JTextArea();
         readout.setFocusable(false);
         readout.setEditable(false);
-        readout.setFont(Font.getFont("Monospaced"));
         readout.setAutoscrolls(true);
         JScrollPane rdt = new JScrollPane(readout);
         rdt.setLocation(10, 10);
         rdt.setSize(backend.getWidth()-140,backend.getHeight()-120);
         rdt.setAutoscrolls(true);
         
-        JTextField cmdLine = new JTextField();
+        cmdLine = new JTextField();
         cmdLine.setSize(rdt.getWidth(),sAQ.getHeight());
-        cmdLine.setLocation(10, rdt.getHeight()+40);
+        cmdLine.setLocation(10, rdt.getHeight()+15);
         cmdLine.setFocusCycleRoot(true);
-        cmdLine.addKeyListener(null);
+        cmdLine.addKeyListener(new CmdLineListener());
         
+        JButton sndCmd = new JButton("Send");
+        sndCmd.setSize(sndCmd.getPreferredSize());
+        sndCmd.setLocation(cmdLine.getWidth()+cmdLine.getX()+10,cmdLine.getY());
+        sndCmd.addActionListener(new SendAction());
+        
+        
+        panel.add(ser);
+        panel.add(cha);
         panel.add(cmdLine);
+        panel.add(sndCmd);
         panel.add(rdt);
         panel.add(sAQ);
         panel.add(recon);
@@ -160,6 +202,8 @@ public class CoreProcessor {
                 sentMessage+=      "\nWas trying to execute this cmd    : "+mess.getContent();
                 sentMessage+=      "\nWith Message ID                   : "+mess.getId();
                 god.getServerById("156289196451954688").getChannelById("278226194103664640").sendMessage("```"+sentMessage+"```");
+                updateBox(e.getMessage());
+                updateBox(sentMessage);
             }
         }
 
@@ -208,6 +252,20 @@ public class CoreProcessor {
         
     }
     
+    class ServerSelector implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+            if(!sIDs.isEmpty()){
+                cIDs.clear();
+                cha.removeAllItems();
+                String selser = (String)ser.getSelectedItem();
+                for(Channel c:god.getServerById(sIDs.get(selser)).getChannels()){
+                    cha.addItem(c.getName());
+                    cIDs.put(c.getName(), c.getId());
+                }
+            }
+        }
+    }
+    
     class ReconnectListener implements ActionListener{
 
         public void actionPerformed(ActionEvent e) {
@@ -216,15 +274,51 @@ public class CoreProcessor {
         
     }
     
+    class SendAction implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+            if(!sIDs.isEmpty()&&!cIDs.isEmpty()){
+                String sent = cmdLine.getText();
+                String serId = sIDs.get((String)ser.getSelectedItem());
+                String chanId = cIDs.get((String)cha.getSelectedItem());
+                god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                cmdLine.setText("");
+            }
+        }
+    }
+    
     class CmdLineListener implements KeyListener{
 
         public void keyTyped(KeyEvent e) {
+            //updateBox(e.getKeyChar()+" || "+e.getKeyCode());
+            if(!sIDs.isEmpty()&&!cIDs.isEmpty()&&e.getKeyCode()==10&&cmdLine.getText().length()>0){
+                String sent = cmdLine.getText();
+                String serId = sIDs.get((String)ser.getSelectedItem());
+                String chanId = cIDs.get((String)cha.getSelectedItem());
+                god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                cmdLine.setText("");
+            }
         }
 
         public void keyPressed(KeyEvent e) {
+            //updateBox(e.getKeyChar()+" || "+e.getKeyCode());
+            if(!sIDs.isEmpty()&&!cIDs.isEmpty()&&e.getKeyCode()==10&&cmdLine.getText().length()>0){
+                String sent = cmdLine.getText();
+                String serId = sIDs.get((String)ser.getSelectedItem());
+                String chanId = cIDs.get((String)cha.getSelectedItem());
+                god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                cmdLine.setText("");
+            }
         }
 
         public void keyReleased(KeyEvent e) {
+            //updateBox(e.getKeyChar()+" || "+e.getKeyCode());
+            if(!sIDs.isEmpty()&&!cIDs.isEmpty()&&e.getKeyCode()==10&&cmdLine.getText().length()>0){
+                String sent = cmdLine.getText();
+                String serId = sIDs.get((String)ser.getSelectedItem());
+                String chanId = cIDs.get((String)cha.getSelectedItem());
+                god.getServerById(serId).getChannelById(chanId).sendMessage(sent);
+                cmdLine.setText("");
+            }
         }
         
     }
