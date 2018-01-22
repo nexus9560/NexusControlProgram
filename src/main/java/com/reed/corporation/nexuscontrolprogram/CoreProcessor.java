@@ -21,6 +21,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashMap;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -52,6 +53,8 @@ public class CoreProcessor {
     
     private static JComboBox cha;
     
+    private static JCheckBox checking;
+    
     private static HashMap<String,String> cIDs = new HashMap<>();
     
     private static JTextField cmdLine;
@@ -69,6 +72,10 @@ public class CoreProcessor {
         if(god==null)
             god = Javacord.getApi(tkn, true);
         god.setAutoReconnect(true);
+        try{
+            god.setReconnectRatelimit(1, 10);
+            god.disconnect();
+        }catch(Exception e){updateBox(e.getLocalizedMessage());}
         god.connect(new FutureCallback<DiscordAPI>()
         {
             public void onSuccess(DiscordAPI apo){
@@ -108,6 +115,10 @@ public class CoreProcessor {
         backend.setLocationRelativeTo(null);
         backend.setTitle("Nexus Control Program");
         
+        checking = new JCheckBox("Run Commands?",true);
+        checking.setSize(checking.getPreferredSize());
+        checking.setLocation(backend.getWidth()-checking.getWidth()-20,70);
+        checking.setToolTipText("Check to have it listen for commands");
         
         JButton sAQ = new JButton("Save and Exit");
         sAQ.setSize(sAQ.getPreferredSize());
@@ -156,7 +167,7 @@ public class CoreProcessor {
         sndCmd.setLocation(cmdLine.getWidth()+cmdLine.getX()+10,cmdLine.getY());
         sndCmd.addActionListener(new SendAction());
         
-        
+        panel.add(checking);
         panel.add(ser);
         panel.add(cha);
         panel.add(cmdLine);
@@ -177,7 +188,7 @@ public class CoreProcessor {
     class GeneralListener implements MessageCreateListener, MessageEditListener, MessageDeleteListener, ServerJoinListener, ServerLeaveListener, ServerMemberAddListener{
         public void onMessageCreate(DiscordAPI apc, Message mess){
             try{
-                if(!mess.getAuthor().isBot()&&(mess.getContent().length()>0&&mess.getContent().charAt(0)=='&')||(mess.getContent().length()>2&&mess.getContent().substring(0,2).contains("&"))){
+                if(checking.isSelected()&&(!mess.getAuthor().isBot()&&(mess.getContent().length()>0&&mess.getContent().charAt(0)=='&')||(mess.getContent().length()>2&&mess.getContent().substring(0,2).contains("&")))){
                     if(working==null)
                         working = new CmdProcessor(apc,mess);
                     working.process(apc, mess);
@@ -210,14 +221,14 @@ public class CoreProcessor {
 
         @Override
         public void onMessageEdit(DiscordAPI dapi, Message msg, String string) {
-            if(working!=null&&!msg.getAuthor().isBot()){
+            if(checking.isSelected()&&working!=null&&!msg.getAuthor().isBot()){
                 working.sendBotLogMessage(msg, string);
             }
         }
 
         @Override
         public void onMessageDelete(DiscordAPI dapi, Message msg) {
-            if(working!=null&&!msg.getAuthor().isBot()){
+            if(checking.isSelected()&&working!=null&&!msg.getAuthor().isBot()){
                 working.sendBotLogMessage(msg, null);
             }
         }
@@ -236,7 +247,8 @@ public class CoreProcessor {
         public void onServerMemberAdd(DiscordAPI dapi, User user, Server server) {
             if(working==null)
                 working = new CmdProcessor(dapi,server);
-            working.sendServerWelcomeMessage(server,user);
+            if(checking.isSelected())
+                working.sendServerWelcomeMessage(server,user);
         }
     
 }
