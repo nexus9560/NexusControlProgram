@@ -132,7 +132,7 @@ public class CmdProcessor{
             case "cmd"          :custCommands(msg);break;
             case "diag"         :
             case "diagnostics"  :diagnostics(msg);break;
-            case "guestPass"    :guestPass(msg);break;
+            case "guestpass"    :guestPass(msg);break;
             case "ignore"       :ignoreProcessor(msg);break;
             case "kos"          :kosProcessor(msg);break;
             case "lmds"         :
@@ -212,10 +212,10 @@ public class CmdProcessor{
             return;
         else if(blc!=null&&q!=null){
             String iq = m.getChannelReceiver().getName();
-            blc.sendMessage("Original message in \""+iq+"\":\n```"+q+"```");
+            blc.sendMessage("Original message in \""+m.getChannelReceiver().getMentionTag()+"\" by "+m.getAuthor().getMentionTag()+":\n```"+q+"```");
             blc.sendMessage("Edited message:\n```"+m.getContent()+"```");
         }else if(blc!=null){
-            blc.sendMessage("Deleted message:\n```"+m.getContent()+"```");
+            blc.sendMessage("Deleted message in \""+m.getChannelReceiver().getMentionTag()+"\" by "+m.getAuthor().getMentionTag()+":\n```"+m.getContent()+"```");
             blc.sendMessage("In \""+m.getChannelReceiver().getName()+"\"");
         }
     }
@@ -391,16 +391,20 @@ public class CmdProcessor{
         if(true||sent.length()<2000)
             m.getAuthor().sendMessage("```"+sent+"```");
         else{
-        /*
-            String[] ti = sent.split("\n");
-            ArrayList<String> reto = new ArrayList<>();
-            int lo = 0;
-            int to = 1;
-            reto.add(ti[0]);
-            while(reto.get(lo).length()<1950){
-                
+            String[] splitter = sent.split("\n");
+            int counter = 0;
+            int limit = 250;
+            String ret = "";
+            for(String d:splitter){
+                if(counter<limit){
+                    ret+=d+"\n";
+                    counter++;
+                }else{
+                    counter = 0;
+                    m.getAuthor().sendMessage("```"+ret+"```");
+                    ret = "";
+                }
             }
-        */
         }
     }
     

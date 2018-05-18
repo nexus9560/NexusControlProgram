@@ -282,7 +282,7 @@ public class CoreProcessor {
     class ReconnectListener implements ActionListener{
 
         public void actionPerformed(ActionEvent e) {
-            callBack();
+            updateBox("This doesn't work properly as of yet...");
         }
         
     }
